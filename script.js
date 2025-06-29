@@ -715,22 +715,20 @@ class LNemailClient {
             return false;
         }
         
-        // Remove whitespace
-        str = str.trim();
-        
-        // Check if empty
-        if (str.length === 0) {
+        const trimmedStr = str.trim();
+        if (trimmedStr === '') {
+            return false; // Empty string is not valid Base64
+        }
+
+        try {
+            // The most reliable way to check for Base64 is to decode it.
+            // We also re-encode (`btoa`) to ensure it's a canonical representation,
+            // which handles some edge cases.
+            return btoa(atob(trimmedStr)) === trimmedStr;
+        } catch (err) {
+            // If atob() throws an error, it's not valid Base64.
             return false;
         }
-        
-        // Base64 strings should have length divisible by 4 (with padding)
-        if (str.length % 4 !== 0) {
-            return false;
-        }
-        
-        // Check if it contains only valid base64 characters
-        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-        return base64Regex.test(str);
     }
 
     getFileIcon(filename) {
@@ -768,50 +766,26 @@ class LNemailClient {
 
     downloadAttachment(index, filename, content) {
         try {
-            // Only handle text-based files
-            if (!this.isTextFile(filename)) {
-                this.showStatus(`Download not available for this file type. Only text-based files can be downloaded.`, 'info');
-                return;
-            }
-
-            // Validate content exists
             if (!content || content.trim() === '') {
                 this.showStatus(`No content available for ${filename}`, 'error');
                 return;
             }
 
-            // Debug logging
-            console.log('Processing attachment:', filename);
-            console.log('Content type:', typeof content);
-            console.log('Content length:', content.length);
-            console.log('Content starts with:', content.substring(0, 20));
-
-            // Validate and decode base64 content for text files
-            let textContent;
-            try {
-                // Check if it's valid base64
-                if (!this.isValidBase64(content)) {
-                    console.log('Content failed base64 validation');
-                    // Try to decode anyway in case it's still valid
-                    textContent = atob(content);
-                } else {
-                    textContent = atob(content);
+            let blob;
+            // For text files, check if they are Base64. If not, treat as plain text.
+            // For non-text files, assume they are always Base64.
+            if (this.isTextFile(filename) && !this.isValidBase64(content)) {
+                blob = new Blob([content], { type: 'text/plain' });
+            } else {
+                // An exception will be caught below if atob fails.
+                const binaryString = atob(content);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                 }
-            } catch (decodeError) {
-                console.error('Base64 decode error:', decodeError);
-                console.log('Failed content preview:', content.substring(0, 100) + '...');
-                
-                // Check if content might be plain text instead of base64
-                if (content.length < 1000 && !content.includes('=') && !content.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
-                    console.log('Content appears to be plain text, not base64');
-                    textContent = content; // Use as plain text
-                } else {
-                    this.showStatus(`Failed to decode content for ${filename}. Content may be corrupted or not base64 encoded.`, 'error');
-                    return;
-                }
+                blob = new Blob([bytes]);
             }
 
-            const blob = new Blob([textContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
@@ -831,47 +805,37 @@ class LNemailClient {
 
     previewAttachment(index, filename, content) {
         try {
-            // Only handle text-based files
-            if (!this.isTextFile(filename)) {
-                this.showStatus(`Preview not available for this file type. Only text-based files can be previewed.`, 'info');
-                return;
-            }
-
-            // Validate content exists
             if (!content || content.trim() === '') {
                 this.showStatus(`No content available for ${filename}`, 'error');
                 return;
             }
 
-            // Debug logging
-            console.log('Previewing attachment:', filename);
-            console.log('Content type:', typeof content);
-            console.log('Content length:', content.length);
-            console.log('Content starts with:', content.substring(0, 20));
+            const extension = filename.split('.').pop().toLowerCase();
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
 
-            // Validate and decode base64 content for preview
-            let textContent;
-            try {
-                // Check if it's valid base64
-                if (!this.isValidBase64(content)) {
-                    console.log('Content failed base64 validation');
-                    // Try to decode anyway in case it's still valid
-                    textContent = atob(content);
-                } else {
-                    textContent = atob(content);
+            let modalContent = '';
+            let postRenderAction = () => {};
+
+            if (imageExtensions.includes(extension)) {
+                // Images are assumed to be Base64
+                const binaryString = atob(content);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                 }
-            } catch (decodeError) {
-                console.error('Base64 decode error:', decodeError);
-                console.log('Failed content preview:', content.substring(0, 100) + '...');
+                const blob = new Blob([bytes], { type: `image/${extension === 'jpg' ? 'jpeg' : extension}` });
+                const url = URL.createObjectURL(blob);
                 
-                // Check if content might be plain text instead of base64
-                if (content.length < 1000 && !content.includes('=') && !content.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
-                    console.log('Content appears to be plain text, not base64');
-                    textContent = content; // Use as plain text
-                } else {
-                    this.showStatus(`Failed to decode content for ${filename}. Content may be corrupted or not base64 encoded.`, 'error');
-                    return;
-                }
+                modalContent = `<img src="${url}" alt="${this.escapeHtml(filename)}" style="max-width: 100%; max-height: 80vh;">`;
+                postRenderAction = () => URL.revokeObjectURL(url);
+
+            } else if (this.isTextFile(filename)) {
+                // For text files, decode if Base64, otherwise use as-is.
+                const textContent = this.isValidBase64(content) ? atob(content) : content;
+                modalContent = `<textarea disabled style="width: 100%; height: 70vh; padding: 15px; font-family: monospace; font-size: 14px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; resize: none; overflow-y: auto;">${this.escapeHtml(textContent)}</textarea>`;
+            } else {
+                this.showStatus(`Preview not available for this file type. Try downloading instead.`, 'info');
+                return;
             }
 
             const modal = document.createElement('div');
@@ -882,7 +846,7 @@ class LNemailClient {
                         <h3>${this.escapeHtml(filename)}</h3>
                         <button class="close-preview">&times;</button>
                     </div>
-                    <textarea disabled style="width: 100%; height: 70vh; padding: 15px; font-family: monospace; font-size: 14px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; resize: none; overflow-y: auto;">${this.escapeHtml(textContent)}</textarea>
+                    ${modalContent}
                     <div class="preview-actions" style="margin-top: 15px; text-align: right;">
                         <button class="btn-small preview-download-btn" data-index="${index}">
                             <i class="fas fa-download"></i> Download
@@ -892,26 +856,26 @@ class LNemailClient {
             `;
             
             document.body.appendChild(modal);
+
+            const closeModal = () => {
+                postRenderAction();
+                document.body.removeChild(modal);
+            };
             
-            // Add event listener for download button in preview
-            modal.querySelector('.preview-download-btn').addEventListener('click', (e) => {
-                const btn = e.target.closest('.preview-download-btn');
-                const index = parseInt(btn.dataset.index);
+            modal.querySelector('.preview-download-btn').addEventListener('click', () => {
                 const attachment = this.currentAttachments[index];
                 if (attachment) {
                     this.downloadAttachment(index, attachment.filename, attachment.content);
                 }
             });
             
-            modal.querySelector('.close-preview').addEventListener('click', () => {
-                document.body.removeChild(modal);
-            });
-            
+            modal.querySelector('.close-preview').addEventListener('click', closeModal);
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    document.body.removeChild(modal);
+                    closeModal();
                 }
             });
+
         } catch (error) {
             console.error('Failed to preview attachment:', error);
             this.showStatus(`Failed to preview ${filename}: ${error.message}`, 'error');
