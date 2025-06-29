@@ -6,6 +6,7 @@ class LNemailClient {
         this.accountInfo = null;
         this.emails = [];
         this.currentView = 'inbox';
+        this.autoRefreshTimer = null;
         this.init();
     }
 
@@ -63,6 +64,7 @@ class LNemailClient {
                 this.showMainApp();
                 this.updateAccountDisplay();
                 this.refreshInbox();
+                this.startAutoRefresh();
                 this.showStatus('Connected!', 'success');
                 return;
             } else {
@@ -133,6 +135,7 @@ class LNemailClient {
                 this.showMainApp();
                 this.updateAccountDisplay();
                 this.refreshInbox();
+                this.startAutoRefresh();
                 this.showStatus('Connected successfully!', 'success');
             } else {
                 // Reset token if authorization failed
@@ -200,6 +203,9 @@ class LNemailClient {
     }
 
     handleDisconnect() {
+        // Stop auto-refresh
+        this.stopAutoRefresh();
+        
         // Clear saved token from localStorage
         this.clearSavedToken();
         
@@ -330,6 +336,33 @@ class LNemailClient {
         }
     }
 
+    // Auto-refresh functionality
+    startAutoRefresh() {
+        // Clear any existing timer first
+        this.stopAutoRefresh();
+        
+        // Set up auto-refresh every 10 seconds
+        this.autoRefreshTimer = setInterval(async () => {
+            if (this.accessToken && this.currentView === 'inbox') {
+                try {
+                    await this.refreshInbox();
+                } catch (error) {
+                    console.error('Auto-refresh failed:', error);
+                }
+            }
+        }, 5000); // 5 seconds
+        
+        console.log('Auto-refresh started (every 10 seconds)');
+    }
+
+    stopAutoRefresh() {
+        if (this.autoRefreshTimer) {
+            clearInterval(this.autoRefreshTimer);
+            this.autoRefreshTimer = null;
+            console.log('Auto-refresh stopped');
+        }
+    }
+
     // API Methods
     async makeRequest(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
@@ -409,8 +442,8 @@ class LNemailClient {
             this.emails = detailedEmails;
             this.renderEmailList();
             this.updateInboxCount();
-            const unreadCount = this.emails.filter(email => email.read === false).length;
-            this.showStatus(`Total ${unreadCount} emails unread`, 'success');
+            // const unreadCount = this.emails.filter(email => email.read === false).length;
+            // this.showStatus(`Total ${unreadCount} emails unread`, 'success');
         } catch (error) {
             console.error('Failed to refresh inbox:', error);
             this.showStatus(`Failed to load emails: ${error.message}`, 'error');
