@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LNemail Client</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Token Input Modal -->
+        <div id="tokenModal" class="modal active">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-key"></i> LNemail Access</h2>
+                    <p>Enter your access token to get started</p>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <input type="password" id="accessToken" placeholder="Enter your access token" />
+                        <button id="connectBtn" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Connect
+                        </button>
+                    </div>
+                    <div class="help-text">
+                        <i class="fas fa-info-circle"></i>
+                        Don't have an access token? Create an email account first using the API.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="mainApp" class="main-app">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1><i class="fas fa-envelope"></i> LNemail Client</h1>
+                </div>
+                <div class="header-right">
+                    <button id="refreshBtn" class="btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button id="composeBtn" class="btn-primary">
+                        <i class="fas fa-plus"></i> Compose
+                    </button>
+                    <button id="disconnectBtn" class="btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> Disconnect
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <nav class="nav-menu">
+                        <button class="nav-item active" data-view="inbox">
+                            <i class="fas fa-inbox"></i> Inbox
+                            <span id="inboxCount" class="count">0</span>
+                        </button>
+                        <button class="nav-item" data-view="compose">
+                            <i class="fas fa-edit"></i> Compose
+                        </button>
+                        <button class="nav-item" data-view="sent">
+                            <i class="fas fa-paper-plane"></i> Sent
+                        </button>
+                    </nav>
+                </aside>
+
+                <!-- Content Area -->
+                <section class="content-area">
+                    <!-- Inbox View -->
+                    <div id="inboxView" class="view active">
+                        <div class="view-header">
+                            <h2><i class="fas fa-inbox"></i> Inbox</h2>
+                            <div class="loading" id="inboxLoading">
+                                <i class="fas fa-spinner fa-spin"></i> Loading emails...
+                            </div>
+                        </div>
+                        <div id="emailList" class="email-list">
+                            <!-- Emails will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Compose View -->
+                    <div id="composeView" class="view">
+                        <div class="view-header">
+                            <h2><i class="fas fa-edit"></i> Compose Email</h2>
+                        </div>
+                        <form id="composeForm" class="compose-form">
+                            <div class="form-group">
+                                <label for="recipient">To:</label>
+                                <input type="email" id="recipient" placeholder="recipient@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subject">Subject:</label>
+                                <input type="text" id="subject" placeholder="Email subject" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="body">Message:</label>
+                                <textarea id="body" rows="10" placeholder="Write your message here..." required></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Email
+                                </button>
+                                <button type="button" id="clearForm" class="btn-secondary">
+                                    <i class="fas fa-eraser"></i> Clear
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Email Detail View -->
+                    <div id="emailDetailView" class="view">
+                        <div class="view-header">
+                            <button id="backToInbox" class="btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Inbox
+                            </button>
+                            <h2 id="emailSubject"></h2>
+                        </div>
+                        <div class="email-detail">
+                            <div class="email-meta">
+                                <div class="email-from">
+                                    <strong>From:</strong> <span id="emailFrom"></span>
+                                </div>
+                                <div class="email-date">
+                                    <strong>Date:</strong> <span id="emailDate"></span>
+                                </div>
+                            </div>
+                            <div class="email-content">
+                                <div id="emailBody"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusContainer" class="status-container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
