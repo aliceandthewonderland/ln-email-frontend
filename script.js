@@ -63,7 +63,7 @@ class LNemailClient {
                 this.showMainApp();
                 this.updateAccountDisplay();
                 this.refreshInbox();
-                this.showStatus('Auto-connected!', 'success');
+                this.showStatus('Connected!', 'success');
                 return;
             } else {
                 console.log('Saved token is invalid, clearing it');
@@ -409,7 +409,8 @@ class LNemailClient {
             this.emails = detailedEmails;
             this.renderEmailList();
             this.updateInboxCount();
-            this.showStatus(`Loaded ${emails.length} emails`, 'success');
+            const unreadCount = this.emails.filter(email => email.read === false).length;
+            this.showStatus(`Total ${unreadCount} emails unread`, 'success');
         } catch (error) {
             console.error('Failed to refresh inbox:', error);
             this.showStatus(`Failed to load emails: ${error.message}`, 'error');
@@ -528,7 +529,7 @@ class LNemailClient {
     }
 
     updateInboxCount() {
-        const count = this.emails.length;
+        const count = this.emails.filter(email => email.read === false).length;
         document.getElementById('inboxCount').textContent = count;
     }
 
