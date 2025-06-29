@@ -540,11 +540,15 @@ class LNemailClient {
             return;
         }
 
+        // Store attachments in instance variable for reliable access
+        this.currentAttachments = attachments;
+
         const attachmentsList = attachments.map((attachment, index) => {
             const filename = attachment.filename || `Attachment ${index + 1}`;
             const hasContent = attachment.content && attachment.content.length > 0;
             const contentSize = hasContent ? Math.round(attachment.content.length / 1024) : 0;
             const contentType = this.getFileIcon(filename);
+            const isTextFile = this.isTextFile(filename);
 
             return `
                 <div class="attachment-detail" data-attachment-index="${index}">
@@ -553,14 +557,18 @@ class LNemailClient {
                         <span class="attachment-name">${this.escapeHtml(filename)}</span>
                         ${hasContent ? `<span class="attachment-size">(${contentSize}KB)</span>` : ''}
                     </div>
-                    ${hasContent ? `
+                    ${hasContent && isTextFile ? `
                         <div class="attachment-actions">
-                            <button class="btn-small" onclick="client.downloadAttachment(${index}, '${this.escapeHtml(filename)}', '${attachment.content}')">
+                            <button class="btn-small attachment-download-btn">
                                 <i class="fas fa-download"></i> Download
                             </button>
-                            <button class="btn-small" onclick="client.previewAttachment(${index}, '${this.escapeHtml(filename)}', '${attachment.content}')">
+                            <button class="btn-small attachment-preview-btn">
                                 <i class="fas fa-eye"></i> Preview
                             </button>
+                        </div>
+                    ` : hasContent ? `
+                        <div class="attachment-actions">
+                            <span class="attachment-note">Preview not available for this file type</span>
                         </div>
                     ` : ''}
                 </div>
@@ -575,6 +583,29 @@ class LNemailClient {
                 </div>
             </div>
         `;
+
+        // Add event listeners for attachment buttons
+        attachmentsContainer.querySelectorAll('.attachment-download-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const attachmentDetail = e.target.closest('.attachment-detail');
+                const index = parseInt(attachmentDetail.dataset.attachmentIndex);
+                const attachment = this.currentAttachments[index];
+                if (attachment) {
+                    this.downloadAttachment(index, attachment.filename, attachment.content);
+                }
+            });
+        });
+
+        attachmentsContainer.querySelectorAll('.attachment-preview-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const attachmentDetail = e.target.closest('.attachment-detail');
+                const index = parseInt(attachmentDetail.dataset.attachmentIndex);
+                const attachment = this.currentAttachments[index];
+                if (attachment) {
+                    this.previewAttachment(index, attachment.filename, attachment.content);
+                }
+            });
+        });
     }
 
     // Compose Email
@@ -673,6 +704,35 @@ class LNemailClient {
         return emailRegex.test(email);
     }
 
+    isTextFile(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        const textExtensions = ['txt', 'asc', 'sig', 'gpg', 'pgp', 'csv', 'json', 'xml', 'log'];
+        return textExtensions.includes(extension);
+    }
+
+    isValidBase64(str) {
+        if (!str || typeof str !== 'string') {
+            return false;
+        }
+        
+        // Remove whitespace
+        str = str.trim();
+        
+        // Check if empty
+        if (str.length === 0) {
+            return false;
+        }
+        
+        // Base64 strings should have length divisible by 4 (with padding)
+        if (str.length % 4 !== 0) {
+            return false;
+        }
+        
+        // Check if it contains only valid base64 characters
+        const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+        return base64Regex.test(str);
+    }
+
     getFileIcon(filename) {
         const extension = filename.split('.').pop().toLowerCase();
         const iconMap = {
@@ -684,6 +744,14 @@ class LNemailClient {
             'ppt': { icon: 'fa-file-powerpoint', color: '#d24726' },
             'pptx': { icon: 'fa-file-powerpoint', color: '#d24726' },
             'txt': { icon: 'fa-file-alt', color: '#6c757d' },
+            'asc': { icon: 'fa-file-code', color: '#6c757d' },
+            'sig': { icon: 'fa-file-code', color: '#6c757d' },
+            'gpg': { icon: 'fa-file-code', color: '#6c757d' },
+            'pgp': { icon: 'fa-file-code', color: '#6c757d' },
+            'csv': { icon: 'fa-file-csv', color: '#28a745' },
+            'json': { icon: 'fa-file-code', color: '#6c757d' },
+            'xml': { icon: 'fa-file-code', color: '#6c757d' },
+            'log': { icon: 'fa-file-alt', color: '#6c757d' },
             'jpg': { icon: 'fa-file-image', color: '#28a745' },
             'jpeg': { icon: 'fa-file-image', color: '#28a745' },
             'png': { icon: 'fa-file-image', color: '#28a745' },
@@ -700,14 +768,50 @@ class LNemailClient {
 
     downloadAttachment(index, filename, content) {
         try {
-            // Decode base64 content
-            const binaryString = atob(content);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
+            // Only handle text-based files
+            if (!this.isTextFile(filename)) {
+                this.showStatus(`Download not available for this file type. Only text-based files can be downloaded.`, 'info');
+                return;
             }
-            
-            const blob = new Blob([bytes]);
+
+            // Validate content exists
+            if (!content || content.trim() === '') {
+                this.showStatus(`No content available for ${filename}`, 'error');
+                return;
+            }
+
+            // Debug logging
+            console.log('Processing attachment:', filename);
+            console.log('Content type:', typeof content);
+            console.log('Content length:', content.length);
+            console.log('Content starts with:', content.substring(0, 20));
+
+            // Validate and decode base64 content for text files
+            let textContent;
+            try {
+                // Check if it's valid base64
+                if (!this.isValidBase64(content)) {
+                    console.log('Content failed base64 validation');
+                    // Try to decode anyway in case it's still valid
+                    textContent = atob(content);
+                } else {
+                    textContent = atob(content);
+                }
+            } catch (decodeError) {
+                console.error('Base64 decode error:', decodeError);
+                console.log('Failed content preview:', content.substring(0, 100) + '...');
+                
+                // Check if content might be plain text instead of base64
+                if (content.length < 1000 && !content.includes('=') && !content.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
+                    console.log('Content appears to be plain text, not base64');
+                    textContent = content; // Use as plain text
+                } else {
+                    this.showStatus(`Failed to decode content for ${filename}. Content may be corrupted or not base64 encoded.`, 'error');
+                    return;
+                }
+            }
+
+            const blob = new Blob([textContent], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
@@ -727,76 +831,87 @@ class LNemailClient {
 
     previewAttachment(index, filename, content) {
         try {
-            const extension = filename.split('.').pop().toLowerCase();
-            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
-            const textExtensions = ['txt', 'csv', 'json', 'xml', 'html'];
-            
-            if (imageExtensions.includes(extension)) {
-                // Preview image
-                const binaryString = atob(content);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                const blob = new Blob([bytes], { type: `image/${extension === 'jpg' ? 'jpeg' : extension}` });
-                const url = URL.createObjectURL(blob);
-                
-                // Create modal for image preview
-                const modal = document.createElement('div');
-                modal.className = 'preview-modal';
-                modal.innerHTML = `
-                    <div class="preview-content">
-                        <div class="preview-header">
-                            <h3>${this.escapeHtml(filename)}</h3>
-                            <button class="close-preview">&times;</button>
-                        </div>
-                        <img src="${url}" alt="${this.escapeHtml(filename)}" style="max-width: 100%; max-height: 80vh;">
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                
-                modal.querySelector('.close-preview').addEventListener('click', () => {
-                    document.body.removeChild(modal);
-                    URL.revokeObjectURL(url);
-                });
-                
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        document.body.removeChild(modal);
-                        URL.revokeObjectURL(url);
-                    }
-                });
-            } else if (textExtensions.includes(extension)) {
-                // Preview text content
-                const textContent = atob(content);
-                const modal = document.createElement('div');
-                modal.className = 'preview-modal';
-                modal.innerHTML = `
-                    <div class="preview-content">
-                        <div class="preview-header">
-                            <h3>${this.escapeHtml(filename)}</h3>
-                            <button class="close-preview">&times;</button>
-                        </div>
-                        <pre style="white-space: pre-wrap; max-height: 70vh; overflow-y: auto; padding: 20px; background: #f8f9fa; border-radius: 5px;">${this.escapeHtml(textContent)}</pre>
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                
-                modal.querySelector('.close-preview').addEventListener('click', () => {
-                    document.body.removeChild(modal);
-                });
-                
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        document.body.removeChild(modal);
-                    }
-                });
-            } else {
-                this.showStatus(`Preview not available for ${extension.toUpperCase()} files. Try downloading instead.`, 'info');
+            // Only handle text-based files
+            if (!this.isTextFile(filename)) {
+                this.showStatus(`Preview not available for this file type. Only text-based files can be previewed.`, 'info');
+                return;
             }
+
+            // Validate content exists
+            if (!content || content.trim() === '') {
+                this.showStatus(`No content available for ${filename}`, 'error');
+                return;
+            }
+
+            // Debug logging
+            console.log('Previewing attachment:', filename);
+            console.log('Content type:', typeof content);
+            console.log('Content length:', content.length);
+            console.log('Content starts with:', content.substring(0, 20));
+
+            // Validate and decode base64 content for preview
+            let textContent;
+            try {
+                // Check if it's valid base64
+                if (!this.isValidBase64(content)) {
+                    console.log('Content failed base64 validation');
+                    // Try to decode anyway in case it's still valid
+                    textContent = atob(content);
+                } else {
+                    textContent = atob(content);
+                }
+            } catch (decodeError) {
+                console.error('Base64 decode error:', decodeError);
+                console.log('Failed content preview:', content.substring(0, 100) + '...');
+                
+                // Check if content might be plain text instead of base64
+                if (content.length < 1000 && !content.includes('=') && !content.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
+                    console.log('Content appears to be plain text, not base64');
+                    textContent = content; // Use as plain text
+                } else {
+                    this.showStatus(`Failed to decode content for ${filename}. Content may be corrupted or not base64 encoded.`, 'error');
+                    return;
+                }
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'preview-modal';
+            modal.innerHTML = `
+                <div class="preview-content">
+                    <div class="preview-header">
+                        <h3>${this.escapeHtml(filename)}</h3>
+                        <button class="close-preview">&times;</button>
+                    </div>
+                    <textarea disabled style="width: 100%; height: 70vh; padding: 15px; font-family: monospace; font-size: 14px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; resize: none; overflow-y: auto;">${this.escapeHtml(textContent)}</textarea>
+                    <div class="preview-actions" style="margin-top: 15px; text-align: right;">
+                        <button class="btn-small preview-download-btn" data-index="${index}">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add event listener for download button in preview
+            modal.querySelector('.preview-download-btn').addEventListener('click', (e) => {
+                const btn = e.target.closest('.preview-download-btn');
+                const index = parseInt(btn.dataset.index);
+                const attachment = this.currentAttachments[index];
+                if (attachment) {
+                    this.downloadAttachment(index, attachment.filename, attachment.content);
+                }
+            });
+            
+            modal.querySelector('.close-preview').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
         } catch (error) {
             console.error('Failed to preview attachment:', error);
             this.showStatus(`Failed to preview ${filename}: ${error.message}`, 'error');
