@@ -1,7 +1,7 @@
 // LNemail API Client
 class LNemailClient {
     constructor() {
-        this.baseURL = 'https://lnemail.net/api/v1';
+        this.baseURL = '/api/lnemail';
         this.accessToken = null;
         this.accountInfo = null;
         this.emails = [];
