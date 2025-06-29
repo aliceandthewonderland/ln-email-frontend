@@ -307,7 +307,20 @@ class LNemailClient {
                 emails = response.data;
             }
 
-            this.emails = emails;
+            // Fetch detailed content for each email to get attachments info
+            const detailedEmails = await Promise.all(
+                emails.map(async (email) => {
+                    try {
+                        const detailedEmail = await this.getEmailContent(email.id);
+                        return detailedEmail || email; // Fallback to original if detailed fetch fails
+                    } catch (error) {
+                        console.warn(`Failed to fetch details for email ${email.id}:`, error);
+                        return email; // Fallback to original email
+                    }
+                })
+            );
+
+            this.emails = detailedEmails;
             this.renderEmailList();
             this.updateInboxCount();
             this.showStatus(`Loaded ${emails.length} emails`, 'success');
@@ -360,7 +373,11 @@ class LNemailClient {
 
         emailList.innerHTML = this.emails.map(email => {
             const date = new Date(email.date || email.timestamp || Date.now()).toLocaleDateString();
-            const preview = this.truncateText(email.body || email.content || 'No content', 100);
+            const bodyContent = email.body || email.content || 'No content';
+            const preview = this.truncateText(bodyContent, 100);
+            
+            // Create attachments preview
+            const attachmentsPreview = this.createAttachmentsPreview(email.attachments);
             
             return `
                 <div class="email-item ${email.read === false ? 'unread' : ''}" data-email-id="${email.id}">
@@ -369,7 +386,10 @@ class LNemailClient {
                         <div class="email-date">${date}</div>
                     </div>
                     <div class="email-subject">${this.escapeHtml(email.subject || 'No Subject')}</div>
-                    <div class="email-preview">${this.escapeHtml(preview)}</div>
+                    <div class="email-preview">
+                        <div class="preview-body">${this.escapeHtml(preview)}</div>
+                        ${attachmentsPreview}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -414,6 +434,9 @@ class LNemailClient {
         document.getElementById('emailFrom').textContent = fullEmail.from || fullEmail.sender || 'Unknown Sender';
         document.getElementById('emailDate').textContent = new Date(fullEmail.date || fullEmail.timestamp || Date.now()).toLocaleString();
         document.getElementById('emailBody').innerHTML = this.formatEmailBody(fullEmail.body || fullEmail.content || 'No content available');
+        
+        // Display attachments
+        this.displayEmailAttachments(fullEmail.attachments);
 
         this.showView('emailDetail');
     }
@@ -421,6 +444,51 @@ class LNemailClient {
     updateInboxCount() {
         const count = this.emails.length;
         document.getElementById('inboxCount').textContent = count;
+    }
+
+    displayEmailAttachments(attachments) {
+        const attachmentsContainer = document.getElementById('emailAttachments');
+        
+        if (!attachments || !Array.isArray(attachments) || attachments.length === 0) {
+            attachmentsContainer.innerHTML = '';
+            return;
+        }
+
+        const attachmentsList = attachments.map((attachment, index) => {
+            const filename = attachment.filename || `Attachment ${index + 1}`;
+            const hasContent = attachment.content && attachment.content.length > 0;
+            const contentSize = hasContent ? Math.round(attachment.content.length / 1024) : 0;
+            const contentType = this.getFileIcon(filename);
+
+            return `
+                <div class="attachment-detail" data-attachment-index="${index}">
+                    <div class="attachment-info">
+                        <i class="fas ${contentType.icon}"></i>
+                        <span class="attachment-name">${this.escapeHtml(filename)}</span>
+                        ${hasContent ? `<span class="attachment-size">(${contentSize}KB)</span>` : ''}
+                    </div>
+                    ${hasContent ? `
+                        <div class="attachment-actions">
+                            <button class="btn-small" onclick="client.downloadAttachment(${index}, '${this.escapeHtml(filename)}', '${attachment.content}')">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            <button class="btn-small" onclick="client.previewAttachment(${index}, '${this.escapeHtml(filename)}', '${attachment.content}')">
+                                <i class="fas fa-eye"></i> Preview
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        attachmentsContainer.innerHTML = `
+            <div class="attachments-section">
+                <h4><i class="fas fa-paperclip"></i> Attachments (${attachments.length})</h4>
+                <div class="attachments-list-detail">
+                    ${attachmentsList}
+                </div>
+            </div>
+        `;
     }
 
     // Compose Email
@@ -474,6 +542,29 @@ class LNemailClient {
         document.getElementById('body').value = '';
     }
 
+    createAttachmentsPreview(attachments) {
+        if (!attachments || !Array.isArray(attachments) || attachments.length === 0) {
+            return '';
+        }
+
+        const attachmentsList = attachments.map(attachment => {
+            const filename = attachment.filename || 'Unknown file';
+            const hasContent = attachment.content && attachment.content.length > 0;
+            const contentSize = hasContent ? `(${Math.round(attachment.content.length / 1024)}KB)` : '';
+            
+            return `<span class="attachment-item">
+                <i class="fas fa-paperclip"></i> ${this.escapeHtml(filename)} ${contentSize}
+            </span>`;
+        }).join('');
+
+        return `<div class="attachments-preview">
+            <div class="attachments-label">
+                <i class="fas fa-paperclip"></i> ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}:
+            </div>
+            <div class="attachments-list">${attachmentsList}</div>
+        </div>`;
+    }
+
     // Utility Methods
     truncateText(text, maxLength) {
         if (text.length <= maxLength) return text;
@@ -495,9 +586,140 @@ class LNemailClient {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
+
+    getFileIcon(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': { icon: 'fa-file-pdf', color: '#dc3545' },
+            'doc': { icon: 'fa-file-word', color: '#2b579a' },
+            'docx': { icon: 'fa-file-word', color: '#2b579a' },
+            'xls': { icon: 'fa-file-excel', color: '#107c41' },
+            'xlsx': { icon: 'fa-file-excel', color: '#107c41' },
+            'ppt': { icon: 'fa-file-powerpoint', color: '#d24726' },
+            'pptx': { icon: 'fa-file-powerpoint', color: '#d24726' },
+            'txt': { icon: 'fa-file-alt', color: '#6c757d' },
+            'jpg': { icon: 'fa-file-image', color: '#28a745' },
+            'jpeg': { icon: 'fa-file-image', color: '#28a745' },
+            'png': { icon: 'fa-file-image', color: '#28a745' },
+            'gif': { icon: 'fa-file-image', color: '#28a745' },
+            'zip': { icon: 'fa-file-archive', color: '#ffc107' },
+            'rar': { icon: 'fa-file-archive', color: '#ffc107' },
+            'mp3': { icon: 'fa-file-audio', color: '#17a2b8' },
+            'mp4': { icon: 'fa-file-video', color: '#6f42c1' },
+            'avi': { icon: 'fa-file-video', color: '#6f42c1' }
+        };
+        
+        return iconMap[extension] || { icon: 'fa-file', color: '#6c757d' };
+    }
+
+    downloadAttachment(index, filename, content) {
+        try {
+            // Decode base64 content
+            const binaryString = atob(content);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([bytes]);
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showStatus(`Downloaded ${filename}`, 'success');
+        } catch (error) {
+            console.error('Failed to download attachment:', error);
+            this.showStatus(`Failed to download ${filename}: ${error.message}`, 'error');
+        }
+    }
+
+    previewAttachment(index, filename, content) {
+        try {
+            const extension = filename.split('.').pop().toLowerCase();
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+            const textExtensions = ['txt', 'csv', 'json', 'xml', 'html'];
+            
+            if (imageExtensions.includes(extension)) {
+                // Preview image
+                const binaryString = atob(content);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const blob = new Blob([bytes], { type: `image/${extension === 'jpg' ? 'jpeg' : extension}` });
+                const url = URL.createObjectURL(blob);
+                
+                // Create modal for image preview
+                const modal = document.createElement('div');
+                modal.className = 'preview-modal';
+                modal.innerHTML = `
+                    <div class="preview-content">
+                        <div class="preview-header">
+                            <h3>${this.escapeHtml(filename)}</h3>
+                            <button class="close-preview">&times;</button>
+                        </div>
+                        <img src="${url}" alt="${this.escapeHtml(filename)}" style="max-width: 100%; max-height: 80vh;">
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                modal.querySelector('.close-preview').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                    URL.revokeObjectURL(url);
+                });
+                
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                        URL.revokeObjectURL(url);
+                    }
+                });
+            } else if (textExtensions.includes(extension)) {
+                // Preview text content
+                const textContent = atob(content);
+                const modal = document.createElement('div');
+                modal.className = 'preview-modal';
+                modal.innerHTML = `
+                    <div class="preview-content">
+                        <div class="preview-header">
+                            <h3>${this.escapeHtml(filename)}</h3>
+                            <button class="close-preview">&times;</button>
+                        </div>
+                        <pre style="white-space: pre-wrap; max-height: 70vh; overflow-y: auto; padding: 20px; background: #f8f9fa; border-radius: 5px;">${this.escapeHtml(textContent)}</pre>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                modal.querySelector('.close-preview').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                });
+            } else {
+                this.showStatus(`Preview not available for ${extension.toUpperCase()} files. Try downloading instead.`, 'info');
+            }
+        } catch (error) {
+            console.error('Failed to preview attachment:', error);
+            this.showStatus(`Failed to preview ${filename}: ${error.message}`, 'error');
+        }
+    }
 }
 
 // Initialize the application when DOM is loaded
+let client;
 document.addEventListener('DOMContentLoaded', () => {
-    new LNemailClient();
+    client = new LNemailClient();
 }); 
