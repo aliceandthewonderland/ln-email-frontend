@@ -826,13 +826,31 @@ class LNemailClient {
                 const blob = new Blob([bytes], { type: `image/${extension === 'jpg' ? 'jpeg' : extension}` });
                 const url = URL.createObjectURL(blob);
                 
-                modalContent = `<img src="${url}" alt="${this.escapeHtml(filename)}" style="max-width: 100%; max-height: 80vh;">`;
+                modalContent = `<img src="${url}" alt="${this.escapeHtml(filename)}" style="
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                    display: block;
+                    margin: 0 auto;
+                ">`;
                 postRenderAction = () => URL.revokeObjectURL(url);
 
             } else if (this.isTextFile(filename)) {
                 // For text files, decode if Base64, otherwise use as-is.
                 const textContent = this.isValidBase64(content) ? atob(content) : content;
-                modalContent = `<textarea disabled style="width: 100%; height: 70vh; padding: 15px; font-family: monospace; font-size: 14px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; resize: none; overflow-y: auto;">${this.escapeHtml(textContent)}</textarea>`;
+                modalContent = `<textarea disabled style="
+                    width: 100%;
+                    height: 100%;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    padding: 15px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    background: #f8f9fa;
+                    resize: none;
+                    outline: none;
+                ">${this.escapeHtml(textContent)}</textarea>`;
             } else {
                 this.showStatus(`Preview not available for this file type. Try downloading instead.`, 'info');
                 return;
@@ -840,14 +858,68 @@ class LNemailClient {
 
             const modal = document.createElement('div');
             modal.className = 'preview-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
             modal.innerHTML = `
-                <div class="preview-content">
-                    <div class="preview-header">
-                        <h3>${this.escapeHtml(filename)}</h3>
-                        <button class="close-preview">&times;</button>
+                <div class="preview-content" style="
+                    background: white;
+                    border-radius: 8px;
+                    width: 80vw;
+                    height: 80vh;
+                    max-width: 1200px;
+                    max-height: 800px;
+                    display: flex;
+                    flex-direction: column;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                ">
+                    <div class="preview-header" style="
+                        padding: 20px;
+                        border-bottom: 1px solid #eee;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        flex-shrink: 0;
+                    ">
+                        <h3 style="margin: 0; color: #333;">${this.escapeHtml(filename)}</h3>
+                        <button class="close-preview" style="
+                            background: none;
+                            border: none;
+                            font-size: 24px;
+                            cursor: pointer;
+                            color: #666;
+                            padding: 0;
+                            width: 30px;
+                            height: 30px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">&times;</button>
                     </div>
-                    ${modalContent}
-                    <div class="preview-actions" style="margin-top: 15px; text-align: right;">
+                    <div class="preview-body" style="
+                        flex: 1;
+                        padding: 20px;
+                        overflow: auto;
+                        display: flex;
+                        flex-direction: column;
+                    ">
+                        ${modalContent}
+                    </div>
+                    <div class="preview-actions" style="
+                        padding: 15px 20px;
+                        border-top: 1px solid #eee;
+                        text-align: right;
+                        flex-shrink: 0;
+                    ">
                         <button class="btn-small preview-download-btn" data-index="${index}">
                             <i class="fas fa-download"></i> Download
                         </button>

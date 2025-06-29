@@ -149,6 +149,10 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-small:hover {
+    transform: translateY(-1px);
+}
+
 /* Main App Styles */
 .main-app {
     background: white;
