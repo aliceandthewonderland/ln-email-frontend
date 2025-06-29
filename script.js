@@ -11,7 +11,7 @@ class LNemailClient {
 
     init() {
         this.bindEvents();
-        this.showTokenModal();
+        this.tryAutoConnect();
     }
 
     // Event Binding
@@ -43,6 +43,67 @@ class LNemailClient {
         document.getElementById('backToInbox').addEventListener('click', () => this.showView('inbox'));
     }
 
+    // Auto-connect with saved token
+    async tryAutoConnect() {
+        const savedToken = this.getSavedToken();
+        
+        if (savedToken) {
+            console.log('Found saved token, attempting auto-connect...');
+            
+            // Set the token in the input field
+            document.getElementById('accessToken').value = savedToken;
+            
+            // Try to connect automatically
+            this.accessToken = savedToken;
+            const isAuthorized = await this.checkAccountAuthorization();
+            
+            if (isAuthorized) {
+                console.log('Auto-connect successful');
+                this.hideTokenModal();
+                this.showMainApp();
+                this.updateAccountDisplay();
+                this.refreshInbox();
+                this.showStatus('Auto-connected with saved token!', 'success');
+                return;
+            } else {
+                console.log('Saved token is invalid, clearing it');
+                this.clearSavedToken();
+                this.accessToken = null;
+            }
+        }
+        
+        // Show token modal if auto-connect failed or no saved token
+        this.showTokenModal();
+    }
+
+    // Local Storage Methods
+    getSavedToken() {
+        try {
+            return localStorage.getItem('lnemail_access_token');
+        } catch (error) {
+            console.error('Failed to get saved token:', error);
+            return null;
+        }
+    }
+
+    saveToken(token) {
+        try {
+            localStorage.setItem('lnemail_access_token', token);
+            console.log('Token saved to localStorage');
+        } catch (error) {
+            console.error('Failed to save token:', error);
+        }
+    }
+
+    clearSavedToken() {
+        try {
+            localStorage.removeItem('lnemail_access_token');
+            console.log('Saved token cleared from localStorage');
+        } catch (error) {
+            console.error('Failed to clear saved token:', error);
+        }
+    }
+
     // Authentication
     async handleConnect() {
         const token = document.getElementById('accessToken').value.trim();
@@ -65,6 +126,9 @@ class LNemailClient {
             const isAuthorized = await this.checkAccountAuthorization();
             
             if (isAuthorized) {
+                // Save token to localStorage on successful connection
+                this.saveToken(token);
+                
                 this.hideTokenModal();
                 this.showMainApp();
                 this.updateAccountDisplay();
@@ -136,6 +200,9 @@ class LNemailClient {
     }
 
     handleDisconnect() {
+        // Clear saved token from localStorage
+        this.clearSavedToken();
+        
         this.accessToken = null;
         this.accountInfo = null;
         this.emails = [];
