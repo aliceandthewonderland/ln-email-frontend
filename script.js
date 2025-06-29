@@ -23,7 +23,7 @@ class LNemailClient {
         });
 
         // Header buttons
-        document.getElementById('refreshBtn').addEventListener('click', () => this.refreshInbox());
+        document.getElementById('refreshBtn').addEventListener('click', () => this.handleRefreshClick());
         document.getElementById('composeBtn').addEventListener('click', () => this.showView('compose'));
         document.getElementById('disconnectBtn').addEventListener('click', () => this.handleDisconnect());
 
@@ -63,7 +63,7 @@ class LNemailClient {
                 this.showMainApp();
                 this.updateAccountDisplay();
                 this.refreshInbox();
-                this.showStatus('Auto-connected with saved token!', 'success');
+                this.showStatus('Auto-connected!', 'success');
                 return;
             } else {
                 console.log('Saved token is invalid, clearing it');
@@ -309,6 +309,25 @@ class LNemailClient {
                 statusDiv.parentNode.removeChild(statusDiv);
             }
         }, 5000);
+    }
+
+    // Handle refresh button click with animation
+    async handleRefreshClick() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = refreshBtn.querySelector('i');
+        
+        // Store original classes and add spinning animation
+        const originalClasses = refreshIcon.className;
+        refreshIcon.className = 'fas fa-sync-alt fa-spin';
+        refreshBtn.disabled = true;
+        
+        try {
+            await this.refreshInbox();
+        } finally {
+            // Restore original icon and enable button
+            refreshIcon.className = originalClasses;
+            refreshBtn.disabled = false;
+        }
     }
 
     // API Methods
