@@ -3,6 +3,7 @@ class LNemailClient {
     constructor() {
         this.baseURL = 'https://lnemail.net/api/v1';
         this.accessToken = null;
+        this.accountInfo = null;
         this.emails = [];
         this.currentView = 'inbox';
         
@@ -44,7 +45,7 @@ class LNemailClient {
     }
 
     // Authentication
-    handleConnect() {
+    async handleConnect() {
         const token = document.getElementById('accessToken').value.trim();
         
         if (!token) {
@@ -52,15 +53,91 @@ class LNemailClient {
             return;
         }
 
-        this.accessToken = token;
-        this.hideTokenModal();
-        this.showMainApp();
-        this.refreshInbox();
-        this.showStatus('Connected successfully!', 'success');
+        // Show loading state
+        const connectBtn = document.getElementById('connectBtn');
+        const originalText = connectBtn.innerHTML;
+        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        connectBtn.disabled = true;
+
+        try {
+            this.accessToken = token;
+            
+            // Check account authorization first
+            const isAuthorized = await this.checkAccountAuthorization();
+            
+            if (isAuthorized) {
+                this.hideTokenModal();
+                this.showMainApp();
+                this.refreshInbox();
+                this.showStatus('Connected successfully!', 'success');
+            } else {
+                // Reset token if authorization failed
+                this.accessToken = null;
+                this.showStatus('Authorization failed. Please check your access token.', 'error');
+            }
+        } catch (error) {
+            this.accessToken = null;
+            this.showStatus(`Connection failed: ${error.message}`, 'error');
+        } finally {
+            // Restore button state
+            connectBtn.innerHTML = originalText;
+            connectBtn.disabled = false;
+        }
+    }
+
+    async checkAccountAuthorization() {
+        try {
+            const response = await this.makeRequest('/account');
+            
+            // Validate response format
+            if (!response || typeof response !== 'object') {
+                console.error('Invalid response format: expected object');
+                return false;
+            }
+            
+            // Check required fields
+            if (!response.email_address || typeof response.email_address !== 'string') {
+                console.error('Invalid response: missing or invalid email_address field');
+                return false;
+            }
+            
+            if (!response.expires_at || typeof response.expires_at !== 'string') {
+                console.error('Invalid response: missing or invalid expires_at field');
+                return false;
+            }
+            
+            // Validate expires_at is a valid ISO date string
+            const expiresAt = new Date(response.expires_at);
+            if (isNaN(expiresAt.getTime())) {
+                console.error('Invalid response: expires_at is not a valid date');
+                return false;
+            }
+            
+            // Check if token has expired
+            if (expiresAt <= new Date()) {
+                console.error('Token has expired');
+                this.showStatus('Your access token has expired. Please get a new one.', 'error');
+                return false;
+            }
+            
+            // Store account info for potential future use
+            this.accountInfo = {
+                email_address: response.email_address,
+                expires_at: response.expires_at,
+                expires_date: expiresAt
+            };
+            
+            console.log(`Account authorized for: ${response.email_address}, expires: ${expiresAt.toLocaleString()}`);
+            return true;
+        } catch (error) {
+            console.error('Account authorization check failed:', error);
+            return false;
+        }
     }
 
     handleDisconnect() {
         this.accessToken = null;
+        this.accountInfo = null;
         this.emails = [];
         this.hideMainApp();
         this.showTokenModal();
@@ -137,7 +214,8 @@ class LNemailClient {
             ...options
         };
 
-        if (this.accessToken && !endpoint.includes('/email') || endpoint.includes('/emails')) {
+        // Add authorization header for all endpoints when we have a token
+        if (this.accessToken) {
             config.headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
 
@@ -156,6 +234,12 @@ class LNemailClient {
             }
         } catch (error) {
             console.error('API Request failed:', error);
+            
+            // Provide more helpful error messages for common issues
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Network error: Please make sure you\'re running this app through a web server (not file://) to avoid CORS issues. Try running: python -m http.server 8000');
+            }
+            
             throw error;
         }
     }
