@@ -177,18 +177,30 @@ class LNemailClient {
             const now = new Date();
             const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
             
-            let expiryText;
+            let relativeText;
             if (daysUntilExpiry > 1) {
-                expiryText = `Expires in ${daysUntilExpiry} days`;
+                relativeText = `Expires in ${daysUntilExpiry} days`;
             } else if (daysUntilExpiry === 1) {
-                expiryText = 'Expires tomorrow';
+                relativeText = 'Expires tomorrow';
             } else if (daysUntilExpiry === 0) {
-                expiryText = 'Expires today';
+                relativeText = 'Expires today';
             } else {
-                expiryText = 'Expired';
+                relativeText = 'Expired';
             }
             
-            document.getElementById('accountExpiry').textContent = expiryText;
+            // Format exact date
+            const exactDate = expiryDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Combine relative and exact date
+            const fullExpiryText = `${relativeText} (${exactDate})`;
+            
+            document.getElementById('accountExpiry').textContent = fullExpiryText;
             document.getElementById('accountExpiry').title = `Full expiry: ${expiryDate.toLocaleString()}`;
         }
     }
