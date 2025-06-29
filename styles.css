@@ -176,6 +176,26 @@ body {
 .header-left h1 {
     font-size: 24px;
     font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.account-info {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.account-email,
+.account-expiry {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.account-info i {
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 .header-right {
@@ -551,6 +571,12 @@ body {
         flex-direction: column;
         gap: 15px;
         text-align: center;
+    }
+
+    .account-info {
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 10px;
     }
     
     .header-right {

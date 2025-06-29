@@ -6,7 +6,6 @@ class LNemailClient {
         this.accountInfo = null;
         this.emails = [];
         this.currentView = 'inbox';
-        
         this.init();
     }
 
@@ -68,6 +67,7 @@ class LNemailClient {
             if (isAuthorized) {
                 this.hideTokenModal();
                 this.showMainApp();
+                this.updateAccountDisplay();
                 this.refreshInbox();
                 this.showStatus('Connected successfully!', 'success');
             } else {
@@ -143,6 +143,9 @@ class LNemailClient {
         this.showTokenModal();
         this.clearComposeForm();
         document.getElementById('accessToken').value = '';
+        // Clear account display
+        document.getElementById('accountEmail').textContent = 'Loading...';
+        document.getElementById('accountExpiry').textContent = 'Loading...';
         this.showStatus('Disconnected', 'info');
     }
 
@@ -162,6 +165,32 @@ class LNemailClient {
 
     hideMainApp() {
         document.getElementById('mainApp').classList.remove('active');
+    }
+
+    updateAccountDisplay() {
+        if (this.accountInfo) {
+            // Update email address
+            document.getElementById('accountEmail').textContent = this.accountInfo.email_address;
+            
+            // Format and update expiry date
+            const expiryDate = new Date(this.accountInfo.expires_at);
+            const now = new Date();
+            const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+            
+            let expiryText;
+            if (daysUntilExpiry > 1) {
+                expiryText = `Expires in ${daysUntilExpiry} days`;
+            } else if (daysUntilExpiry === 1) {
+                expiryText = 'Expires tomorrow';
+            } else if (daysUntilExpiry === 0) {
+                expiryText = 'Expires today';
+            } else {
+                expiryText = 'Expired';
+            }
+            
+            document.getElementById('accountExpiry').textContent = expiryText;
+            document.getElementById('accountExpiry').title = `Full expiry: ${expiryDate.toLocaleString()}`;
+        }
     }
 
     showView(viewName) {
