@@ -425,8 +425,7 @@ class LNemailClient {
             this.emails = emails;
             this.renderEmailList();
             this.updateInboxCount();
-            // const unreadCount = this.emails.filter(email => email.read === false).length;
-            // this.showStatus(`Loaded ${emails.length} emails (${unreadCount} unread)`, 'success');
+            
         } catch (error) {
             console.error('Failed to refresh inbox:', error);
             this.showStatus(`Failed to load emails: ${error.message}`, 'error');
@@ -474,22 +473,76 @@ class LNemailClient {
             return;
         }
 
-        emailList.innerHTML = this.emails.map(email => {
-            const date = new Date(email.date || email.timestamp || Date.now()).toLocaleDateString();
+        const tableHeader = `
+            <div class="inbox-table-header">
+                <div class="inbox-header-status"></div>
+                <div class="inbox-header-sender">From</div>
+                <div class="inbox-header-subject">Subject</div>
+                <div class="inbox-header-date">Date</div>
+            </div>
+        `;
+
+        const emailRows = this.emails.map(email => {
+            const date = new Date(email.date || email.timestamp || Date.now());
+            const isToday = date.toDateString() === new Date().toDateString();
+            const isThisYear = date.getFullYear() === new Date().getFullYear();
+            
+            let dateDisplay;
+            if (isToday) {
+                dateDisplay = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } else if (isThisYear) {
+                dateDisplay = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric'
+                });
+            } else {
+                dateDisplay = date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+            
+            // Extract clean sender name
+            const senderName = (email.from || email.sender || 'Unknown Sender')
+                .replace(/<.*?>/, '').trim() || 'Unknown Sender';
+            
+            const subject = email.subject || 'No Subject';
+            const isUnread = email.read === false;
             
             return `
-                <div class="email-item ${email.read === false ? 'unread' : ''}" data-email-id="${email.id}">
-                    <div class="email-header">
-                        <div class="email-from">${this.escapeHtml(email.from || email.sender || 'Unknown Sender')}</div>
-                        <div class="email-date">${date}</div>
+                <div class="inbox-email-row ${isUnread ? 'inbox-unread' : 'inbox-read'}" data-email-id="${email.id}">
+                    <div class="inbox-cell inbox-status-cell">
+                        <i class="fas ${isUnread ? 'fa-circle' : 'fa-envelope-open'} read-status-icon"></i>
                     </div>
-                    <div class="email-subject">${this.escapeHtml(email.subject || 'No Subject')}</div>
+                    <div class="inbox-cell inbox-sender-cell">
+                        ${this.escapeHtml(senderName)}
+                    </div>
+                    <div class="inbox-cell inbox-subject-cell">
+                        ${this.escapeHtml(subject)}
+                    </div>
+                    <div class="inbox-cell inbox-date-cell">
+                        ${dateDisplay}
+                    </div>
                 </div>
             `;
         }).join('');
 
+        emailList.innerHTML = `
+            <div class="inbox-table">
+                ${tableHeader}
+                <div class="inbox-table-body">
+                    ${emailRows}
+                </div>
+            </div>
+        `;
+
         // Add click handlers
-        emailList.querySelectorAll('.email-item').forEach(item => {
+        emailList.querySelectorAll('.inbox-email-row').forEach(item => {
             item.addEventListener('click', () => {
                 const emailId = item.dataset.emailId;
                 this.openEmail(emailId);
