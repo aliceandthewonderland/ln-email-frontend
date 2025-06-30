@@ -415,35 +415,18 @@ class LNemailClient {
 
         try {
             const response = await this.makeRequest('/emails');
+
+            console.log('response: ',response);
             
-            // Handle different response formats
-            let emails = [];
-            if (Array.isArray(response)) {
-                emails = response;
-            } else if (response.emails && Array.isArray(response.emails)) {
-                emails = response.emails;
-            } else if (response.data && Array.isArray(response.data)) {
-                emails = response.data;
-            }
+            // Extract emails from response
+            const emails = response.emails || [];
 
-            // Fetch detailed content for each email to get attachments info
-            const detailedEmails = await Promise.all(
-                emails.map(async (email) => {
-                    try {
-                        const detailedEmail = await this.getEmailContent(email.id);
-                        return detailedEmail || email; // Fallback to original if detailed fetch fails
-                    } catch (error) {
-                        console.warn(`Failed to fetch details for email ${email.id}:`, error);
-                        return email; // Fallback to original email
-                    }
-                })
-            );
-
-            this.emails = detailedEmails;
+            // Assign emails to this.emails and render
+            this.emails = emails;
             this.renderEmailList();
             this.updateInboxCount();
             // const unreadCount = this.emails.filter(email => email.read === false).length;
-            // this.showStatus(`Total ${unreadCount} emails unread`, 'success');
+            // this.showStatus(`Loaded ${emails.length} emails (${unreadCount} unread)`, 'success');
         } catch (error) {
             console.error('Failed to refresh inbox:', error);
             this.showStatus(`Failed to load emails: ${error.message}`, 'error');
@@ -493,11 +476,6 @@ class LNemailClient {
 
         emailList.innerHTML = this.emails.map(email => {
             const date = new Date(email.date || email.timestamp || Date.now()).toLocaleDateString();
-            const bodyContent = email.body || email.content || 'No content';
-            const preview = this.truncateText(bodyContent, 100);
-            
-            // Create attachments preview
-            const attachmentsPreview = this.createAttachmentsPreview(email.attachments);
             
             return `
                 <div class="email-item ${email.read === false ? 'unread' : ''}" data-email-id="${email.id}">
@@ -506,10 +484,6 @@ class LNemailClient {
                         <div class="email-date">${date}</div>
                     </div>
                     <div class="email-subject">${this.escapeHtml(email.subject || 'No Subject')}</div>
-                    <div class="email-preview">
-                        <div class="preview-body">${this.escapeHtml(preview)}</div>
-                        ${attachmentsPreview}
-                    </div>
                 </div>
             `;
         }).join('');
