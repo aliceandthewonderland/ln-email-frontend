@@ -569,10 +569,13 @@ class LNemailClient {
             return;
         }
 
+        const wasUnread = email.read === false;
+
         // Try to get full email content if we only have a preview
         let fullEmail = email;
         if (!email.fullContent) {
             fullEmail = await this.getEmailContent(emailId);
+            email.read = true; 
             if (!fullEmail) return;
         }
 
@@ -586,6 +589,12 @@ class LNemailClient {
         this.displayEmailAttachments(fullEmail.attachments);
 
         this.showView('emailDetail');
+
+        // STEP 2: Explicitly update the UI (this is REQUIRED)
+        if (wasUnread) {
+            this.updateInboxCount();  // Updates unread count badge
+            this.renderEmailList();   // Re-renders email list with updated styling
+        }
     }
 
     updateInboxCount() {
