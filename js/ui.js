@@ -326,3 +326,62 @@ export function clearComposeForm() {
     document.getElementById('subject').value = '';
     document.getElementById('body').value = '';
 }
+
+export function updateHealthStatus(healthData) {
+    const healthIcon = document.getElementById('healthIcon');
+    const healthStatus = document.getElementById('healthStatus');
+    const healthStatusValue = document.getElementById('healthStatusValue');
+    const healthVersionValue = document.getElementById('healthVersionValue');
+    const healthTimestampValue = document.getElementById('healthTimestampValue');
+
+    if (healthData.success && healthData.data) {
+        // Update header indicator
+        healthIcon.className = 'fas fa-check-circle';
+        healthIcon.style.color = '#28a745'; // Green color
+        healthStatus.textContent = 'API Status: Online';
+
+        // Update detailed status
+        healthStatusValue.textContent = healthData.data.status || 'OK';
+        healthStatusValue.style.color = '#28a745';
+        healthVersionValue.textContent = healthData.data.version || 'Unknown';
+        
+        // Format timestamp
+        if (healthData.data.timestamp) {
+            const timestamp = new Date(healthData.data.timestamp);
+            healthTimestampValue.textContent = timestamp.toLocaleString();
+        } else {
+            healthTimestampValue.textContent = new Date().toLocaleString();
+        }
+    } else {
+        // Update header indicator for error
+        healthIcon.className = 'fas fa-exclamation-circle';
+        healthIcon.style.color = '#dc3545'; // Red color
+        healthStatus.textContent = 'API Status: Error';
+
+        // Update detailed status for error
+        healthStatusValue.textContent = 'Error';
+        healthStatusValue.style.color = '#dc3545';
+        healthVersionValue.textContent = '-';
+        healthTimestampValue.textContent = new Date().toLocaleString();
+        
+        // Show error message
+        if (healthData.error) {
+            showStatus(`Health check failed: ${healthData.error}`, 'error');
+        }
+    }
+}
+
+export function updateHealthStatusLoading() {
+    const healthIcon = document.getElementById('healthIcon');
+    const healthStatus = document.getElementById('healthStatus');
+    const healthStatusValue = document.getElementById('healthStatusValue');
+
+    // Update header indicator
+    healthIcon.className = 'fas fa-spinner fa-spin';
+    healthIcon.style.color = '#ffc107'; // Yellow color
+    healthStatus.textContent = 'API Status: Checking...';
+
+    // Update detailed status
+    healthStatusValue.textContent = 'Checking...';
+    healthStatusValue.style.color = '#ffc107';
+}

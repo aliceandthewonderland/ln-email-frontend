@@ -82,4 +82,20 @@ export async function sendEmail(recipient, subject, body) {
         method: 'POST',
         body: JSON.stringify({ recipient, subject, body })
     });
+}
+
+export async function checkApiHealth() {
+    try {
+        const response = await makeRequest('/health');
+        return {
+            success: true,
+            data: response
+        };
+    } catch (error) {
+        console.error('API health check failed:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 } 

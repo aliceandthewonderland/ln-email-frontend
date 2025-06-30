@@ -47,6 +47,10 @@
                             <i class="fas fa-clock"></i>
                             <span id="accountExpiry">Loading...</span>
                         </div>
+                        <div class="api-health">
+                            <i id="healthIcon" class="fas fa-circle" style="color: #ccc;"></i>
+                            <span id="healthStatus">API Status: Checking...</span>
+                        </div>
                     </div>
                 </div>
                 <div class="header-right">
@@ -78,6 +82,28 @@
                             <i class="fas fa-paper-plane"></i> Sent
                         </button>
                     </nav>
+                    
+                    <!-- API Health Status Section -->
+                    <div class="health-status-section">
+                        <h3><i class="fas fa-heartbeat"></i> API Health</h3>
+                        <div id="healthDetails" class="health-details">
+                            <div class="health-item">
+                                <span class="health-label">Status:</span>
+                                <span id="healthStatusValue" class="health-value">Checking...</span>
+                            </div>
+                            <div class="health-item">
+                                <span class="health-label">Version:</span>
+                                <span id="healthVersionValue" class="health-value">-</span>
+                            </div>
+                            <div class="health-item">
+                                <span class="health-label">Last Check:</span>
+                                <span id="healthTimestampValue" class="health-value">-</span>
+                            </div>
+                        </div>
+                        <button id="refreshHealthBtn" class="btn-secondary health-refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Check Health
+                        </button>
+                    </div>
                 </aside>
 
                 <!-- Content Area -->

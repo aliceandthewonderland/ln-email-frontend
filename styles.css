@@ -1030,6 +1030,90 @@ body {
     }
 
     .inbox-unread .read-status-icon {
-        font-size: 14px;
+        color: #667eea;
+    }
+}
+
+/* Health Status Styles */
+.api-health {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.health-status-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.health-status-section h3 {
+    color: #495057;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.health-details {
+    margin-bottom: 15px;
+}
+
+.health-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.health-item:last-child {
+    border-bottom: none;
+}
+
+.health-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.health-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #28a745;
+}
+
+.health-refresh-btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+.health-refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Mobile responsiveness for health status */
+@media (max-width: 768px) {
+    .health-status-section {
+        margin-top: 20px;
+        padding: 15px;
+    }
+    
+    .health-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .health-value {
+        font-size: 13px;
     }
 } 

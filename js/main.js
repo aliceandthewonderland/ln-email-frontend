@@ -1,5 +1,5 @@
-import { sendEmail } from './api.js';
-import { showStatus, showView, clearComposeForm } from './ui.js';
+import { sendEmail, checkApiHealth } from './api.js';
+import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading } from './ui.js';
 import { handleConnect, handleDisconnect, tryAutoConnect } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
@@ -17,6 +17,31 @@ async function handleRefreshClick() {
     } finally {
         refreshIcon.className = originalClasses;
         refreshBtn.disabled = false;
+    }
+}
+
+async function handleHealthCheck() {
+    const refreshHealthBtn = document.getElementById('refreshHealthBtn');
+    const refreshHealthIcon = refreshHealthBtn.querySelector('i');
+    
+    const originalClasses = refreshHealthIcon.className;
+    refreshHealthIcon.className = 'fas fa-sync-alt fa-spin';
+    refreshHealthBtn.disabled = true;
+    
+    updateHealthStatusLoading();
+    
+    try {
+        const healthResult = await checkApiHealth();
+        updateHealthStatus(healthResult);
+        
+        if (healthResult.success) {
+            showStatus('API health check completed successfully', 'success');
+        }
+    } catch (error) {
+        updateHealthStatus({ success: false, error: error.message });
+    } finally {
+        refreshHealthIcon.className = originalClasses;
+        refreshHealthBtn.disabled = false;
     }
 }
 
@@ -80,11 +105,15 @@ function bindEvents() {
     document.getElementById('clearForm').addEventListener('click', clearComposeForm);
 
     document.getElementById('backToInbox').addEventListener('click', () => showView('inbox'));
+    document.getElementById('refreshHealthBtn').addEventListener('click', handleHealthCheck);
 }
 
 function init() {
     bindEvents();
     tryAutoConnect();
+    
+    // Perform initial health check
+    handleHealthCheck();
 }
 
 // Initialize the application
