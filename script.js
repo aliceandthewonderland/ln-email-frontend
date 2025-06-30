@@ -6,6 +6,8 @@ class LNemailClient {
         this.accountInfo = null;
         this.emails = [];
         this.currentView = 'inbox';
+        this.currentPage = 1;
+        this.itemsPerPage = 15;
         this.autoRefreshTimer = null;
         this.init();
     }
@@ -212,6 +214,7 @@ class LNemailClient {
         this.accessToken = null;
         this.accountInfo = null;
         this.emails = [];
+        this.currentPage = 1;
         this.hideMainApp();
         this.showTokenModal();
         this.clearComposeForm();
@@ -473,6 +476,21 @@ class LNemailClient {
             return;
         }
 
+        const totalPages = Math.ceil(this.emails.length / this.itemsPerPage);
+
+        // Adjust current page if it's out of bounds
+        if (this.currentPage > totalPages && totalPages > 0) {
+            this.currentPage = totalPages;
+        }
+        if (this.currentPage < 1) {
+            this.currentPage = 1;
+        }
+
+        // Pagination logic
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const paginatedEmails = this.emails.slice(startIndex, endIndex);
+
         const tableHeader = `
             <div class="inbox-table-header">
                 <div class="inbox-header-status"></div>
@@ -482,7 +500,7 @@ class LNemailClient {
             </div>
         `;
 
-        const emailRows = this.emails.map(email => {
+        const emailRows = paginatedEmails.map(email => {
             const date = new Date(email.date || email.timestamp || Date.now());
             const isToday = date.toDateString() === new Date().toDateString();
             const isThisYear = date.getFullYear() === new Date().getFullYear();
@@ -500,7 +518,7 @@ class LNemailClient {
                     day: 'numeric'
                 });
             } else {
-                dateDisplay = date.toLocaleDateString('en-US', { 
+                dateDisplay = date.toLocaleDateStrindg('en-US', { 
                     month: 'short', 
                     day: 'numeric',
                     year: 'numeric'
@@ -532,6 +550,8 @@ class LNemailClient {
             `;
         }).join('');
 
+        const paginationControls = this.renderPaginationControls(totalPages);
+
         emailList.innerHTML = `
             <div class="inbox-table">
                 ${tableHeader}
@@ -539,6 +559,7 @@ class LNemailClient {
                     ${emailRows}
                 </div>
             </div>
+            ${paginationControls}
         `;
 
         // Add click handlers
@@ -546,6 +567,48 @@ class LNemailClient {
             item.addEventListener('click', () => {
                 const emailId = item.dataset.emailId;
                 this.openEmail(emailId);
+            });
+        });
+
+        this.bindPaginationEvents();
+    }
+
+    renderPaginationControls(totalPages) {
+        if (totalPages <= 1) {
+            return '';
+        }
+
+        let paginationHtml = `<div class="pagination-controls" style="text-align: center; margin-top: 15px;">`;
+
+        // Previous button
+        paginationHtml += `
+            <button class="pagination-btn" data-page="${this.currentPage - 1}" ${this.currentPage === 1 ? 'disabled' : ''} style="margin: 0 5px; padding: 5px 10px; cursor: pointer;">
+                <i class="fas fa-chevron-left"></i> Prev
+            </button>
+        `;
+
+        // Page numbers
+        paginationHtml += `<span class="pagination-info" style="margin: 0 10px;">Page ${this.currentPage} of ${totalPages}</span>`;
+
+        // Next button
+        paginationHtml += `
+            <button class="pagination-btn" data-page="${this.currentPage + 1}" ${this.currentPage === totalPages ? 'disabled' : ''} style="margin: 0 5px; padding: 5px 10px; cursor: pointer;">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+
+        paginationHtml += `</div>`;
+        return paginationHtml;
+    }
+
+    bindPaginationEvents() {
+        document.querySelectorAll('.pagination-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const page = parseInt(e.currentTarget.dataset.page);
+                if (page) {
+                    this.currentPage = page;
+                    this.renderEmailList();
+                }
             });
         });
     }
