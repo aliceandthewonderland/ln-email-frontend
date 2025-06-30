@@ -678,6 +678,20 @@ body {
     font-size: 16px;
     display: flex;
     flex-direction: column;
+    text-align: left !important;
+    align-items: flex-start !important;
+}
+
+#emailBody {
+    text-align: left !important;
+}
+
+.email-content #emailBody {
+    text-align: left !important;
+}
+
+.email-content #emailBody * {
+    text-align: left !important;
 }
 
 /* Attachments in Email List Preview */
