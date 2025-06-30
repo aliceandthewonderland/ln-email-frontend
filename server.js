@@ -35,9 +35,11 @@ app.get('/', (req, res) => {
 app.use('/api/lnemail', async (req, res) => {
   try {
     const fetch = (await import('node-fetch')).default;
-    // Remove /api/lnemail prefix and construct proper target URL
     const apiPath = req.path.replace('/api/lnemail', '') || '/';
-    const targetUrl = `https://lnemail.net/api/v1${apiPath}`;
+    
+    const targetUrl = apiPath === '/health' 
+      ? `https://lnemail.net/api${apiPath}`
+      : `https://lnemail.net/api/v1${apiPath}`;
     
     console.log(`Proxying ${req.method} ${req.path} -> ${targetUrl}`);
     

@@ -3,6 +3,7 @@ import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealt
 import { handleConnect, handleDisconnect, tryAutoConnect } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
+import { HEALTH_CHECK_INTERVAL } from './config.js';
 
 async function handleRefreshClick() {
     const refreshBtn = document.getElementById('refreshBtn');
@@ -35,13 +36,27 @@ async function handleHealthCheck() {
         updateHealthStatus(healthResult);
         
         if (healthResult.success) {
-            showStatus('API health check completed successfully', 'success');
+            showStatus('LNEmail API is currently healthy!', 'success');
         }
     } catch (error) {
         updateHealthStatus({ success: false, error: error.message });
     } finally {
         refreshHealthIcon.className = originalClasses;
         refreshHealthBtn.disabled = false;
+    }
+}
+
+async function performAutomaticHealthCheck() {
+    try {
+        const healthResult = await checkApiHealth();
+        updateHealthStatus(healthResult);
+        
+        // Only show error messages for automatic checks, not success messages
+        if (!healthResult.success) {
+            showStatus('Automatic health check failed - API may be down', 'error');
+        }
+    } catch (error) {
+        updateHealthStatus({ success: false, error: error.message });
     }
 }
 
@@ -114,6 +129,10 @@ function init() {
     
     // Perform initial health check
     handleHealthCheck();
+    
+    // Set up automatic health checking every 5 minutes
+    setInterval(performAutomaticHealthCheck, HEALTH_CHECK_INTERVAL);
+    console.log(`Automatic health checking enabled (every ${HEALTH_CHECK_INTERVAL / 60000} minutes)`);
 }
 
 // Initialize the application
