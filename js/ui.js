@@ -496,3 +496,58 @@ export function updateHealthStatusLoading() {
     healthStatusValue.textContent = 'Checking...';
     healthStatusValue.style.color = '#ffc107';
 }
+
+// Login page health status functions
+export function updateLoginHealthStatus(healthData) {
+    const loginHealthIcon = document.getElementById('loginHealthIcon');
+    const loginHealthStatus = document.getElementById('loginHealthStatus');
+    const loginHealthStatusValue = document.getElementById('loginHealthStatusValue');
+    const loginHealthVersionValue = document.getElementById('loginHealthVersionValue');
+    const loginHealthTimestampValue = document.getElementById('loginHealthTimestampValue');
+
+    if (healthData.success && healthData.data) {
+        // Update login health indicator
+        loginHealthIcon.className = 'fas fa-check-circle';
+        loginHealthIcon.style.color = '#28a745'; // Green color
+        loginHealthStatus.textContent = 'API Status: Online';
+
+        // Update detailed status
+        loginHealthStatusValue.textContent = healthData.data.status || 'OK';
+        loginHealthStatusValue.style.color = '#28a745';
+        loginHealthVersionValue.textContent = healthData.data.version || 'Unknown';
+        
+        // Format timestamp
+        if (healthData.data.timestamp) {
+            const timestamp = new Date(healthData.data.timestamp);
+            loginHealthTimestampValue.textContent = timestamp.toLocaleString();
+        } else {
+            loginHealthTimestampValue.textContent = new Date().toLocaleString();
+        }
+    } else {
+        // Update login health indicator for error
+        loginHealthIcon.className = 'fas fa-exclamation-circle';
+        loginHealthIcon.style.color = '#dc3545'; // Red color
+        loginHealthStatus.textContent = 'API Status: Error';
+
+        // Update detailed status for error
+        loginHealthStatusValue.textContent = 'Error';
+        loginHealthStatusValue.style.color = '#dc3545';
+        loginHealthVersionValue.textContent = '-';
+        loginHealthTimestampValue.textContent = new Date().toLocaleString();
+    }
+}
+
+export function updateLoginHealthStatusLoading() {
+    const loginHealthIcon = document.getElementById('loginHealthIcon');
+    const loginHealthStatus = document.getElementById('loginHealthStatus');
+    const loginHealthStatusValue = document.getElementById('loginHealthStatusValue');
+
+    // Update login health indicator
+    loginHealthIcon.className = 'fas fa-spinner fa-spin';
+    loginHealthIcon.style.color = '#ffc107'; // Yellow color
+    loginHealthStatus.textContent = 'API Status: Checking...';
+
+    // Update detailed status
+    loginHealthStatusValue.textContent = 'Checking...';
+    loginHealthStatusValue.style.color = '#ffc107';
+}

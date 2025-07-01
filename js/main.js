@@ -1,6 +1,6 @@
 import { sendEmail, checkApiHealth, deleteEmails } from './api.js';
 import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList } from './ui.js';
-import { handleConnect, handleDisconnect, tryAutoConnect } from './auth.js';
+import { handleConnect, handleDisconnect, tryAutoConnect, performLoginHealthCheck } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
 import { HEALTH_CHECK_INTERVAL } from './config.js';
@@ -138,29 +138,62 @@ async function handleDeleteSelected() {
 }
 
 function bindEvents() {
+    // Authentication events
     document.getElementById('connectBtn').addEventListener('click', handleConnect);
-    document.getElementById('accessToken').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleConnect();
+    document.getElementById('disconnectBtn').addEventListener('click', handleDisconnect);
+    
+    // Login health check events
+    document.getElementById('loginRefreshHealthBtn').addEventListener('click', async () => {
+        const loginRefreshHealthBtn = document.getElementById('loginRefreshHealthBtn');
+        const loginRefreshHealthIcon = loginRefreshHealthBtn.querySelector('i');
+        
+        const originalClasses = loginRefreshHealthIcon.className;
+        loginRefreshHealthIcon.className = 'fas fa-sync-alt fa-spin';
+        loginRefreshHealthBtn.disabled = true;
+        
+        try {
+            await performLoginHealthCheck();
+        } finally {
+            loginRefreshHealthIcon.className = originalClasses;
+            loginRefreshHealthBtn.disabled = false;
+        }
+    });
+    
+    // Toggle login health details
+    document.getElementById('loginHealthStatus').addEventListener('click', () => {
+        const details = document.getElementById('loginHealthDetails');
+        details.classList.toggle('hidden');
     });
 
-    document.getElementById('refreshBtn').addEventListener('click', handleRefreshClick);
-    document.getElementById('composeBtn').addEventListener('click', () => showView('compose'));
-    document.getElementById('disconnectBtn').addEventListener('click', handleDisconnect);
+    // Allow enter key to connect
+    document.getElementById('accessToken').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleConnect();
+        }
+    });
 
+    // Navigation events
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            const view = e.currentTarget.dataset.view;
-            if (view) showView(view);
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+            showView(item.dataset.view);
         });
     });
 
+    // Compose events
+    document.getElementById('composeBtn').addEventListener('click', () => showView('compose'));
     document.getElementById('composeForm').addEventListener('submit', handleSendEmail);
     document.getElementById('clearForm').addEventListener('click', clearComposeForm);
 
+    // Email list events
+    document.getElementById('refreshBtn').addEventListener('click', handleRefreshClick);
     document.getElementById('backToInbox').addEventListener('click', () => showView('inbox'));
+
+    // Health check events
     document.getElementById('refreshHealthBtn').addEventListener('click', handleHealthCheck);
-    
-    // Add event listener for delete button - using event delegation since button is dynamically created
+
+    // Delete emails events - using event delegation since button is dynamically created
     document.addEventListener('click', (e) => {
         if (e.target.closest('#deleteSelectedBtn')) {
             handleDeleteSelected();

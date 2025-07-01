@@ -18,6 +18,28 @@
                     <p>Enter your access token to get started</p>
                 </div>
                 <div class="modal-body">
+                    <!-- API Health Status in Login -->
+                    <div class="login-health-status">
+                        <div class="login-health-indicator">
+                            <i id="loginHealthIcon" class="fas fa-circle" style="color: #ccc;"></i>
+                            <span id="loginHealthStatus">API Status: Checking...</span>
+                            <button id="loginRefreshHealthBtn" class="btn-small login-health-refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div id="loginHealthDetails" class="login-health-details hidden">
+                            <div class="health-info-item">
+                                <span>Status: </span><span id="loginHealthStatusValue">-</span>
+                            </div>
+                            <div class="health-info-item">
+                                <span>Version: </span><span id="loginHealthVersionValue">-</span>
+                            </div>
+                            <div class="health-info-item">
+                                <span>Last Check: </span><span id="loginHealthTimestampValue">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="input-group">
                         <input type="password" id="accessToken" placeholder="Enter your access token" />
                         <button id="connectBtn" class="btn-primary">

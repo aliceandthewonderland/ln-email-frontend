@@ -1,6 +1,6 @@
 import { state } from './state.js';
-import { checkAccountAuthorization } from './api.js';
-import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm } from './ui.js';
+import { checkAccountAuthorization, checkApiHealth } from './api.js';
+import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm, updateLoginHealthStatus, updateLoginHealthStatusLoading } from './ui.js';
 import { refreshInbox, startAutoRefresh, stopAutoRefresh } from './inbox.js';
 
 function getSavedToken() {
@@ -43,6 +43,15 @@ export async function handleConnect() {
     connectBtn.disabled = true;
 
     try {
+        // First check API health
+        showStatus('Checking API health...', 'info');
+        const healthResult = await checkApiHealth();
+        updateLoginHealthStatus(healthResult);
+        
+        if (!healthResult.success) {
+            showStatus('Warning: API health check failed. Connection may not work properly.', 'warning');
+        }
+        
         state.accessToken = token;
         
         if (await checkAccountAuthorization()) {
@@ -104,4 +113,24 @@ export async function tryAutoConnect() {
         }
     }
     showTokenModal();
+    // Perform initial health check on login page
+    await performLoginHealthCheck();
+}
+
+export async function performLoginHealthCheck() {
+    updateLoginHealthStatusLoading();
+    
+    try {
+        const healthResult = await checkApiHealth();
+        updateLoginHealthStatus(healthResult);
+        
+        if (healthResult.success) {
+            console.log('API health check successful on login page');
+        } else {
+            console.warn('API health check failed on login page:', healthResult.error);
+        }
+    } catch (error) {
+        console.error('Login health check error:', error);
+        updateLoginHealthStatus({ success: false, error: error.message });
+    }
 } 
