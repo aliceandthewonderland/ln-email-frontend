@@ -116,6 +116,9 @@ export function renderEmailList() {
         
         return `
             <div class="inbox-email-row ${isUnread ? 'inbox-unread' : 'inbox-read'}" data-email-id="${email.id}">
+                <div class="inbox-cell inbox-checkbox-cell">
+                    <input type="checkbox" class="email-checkbox" data-email-id="${email.id}" onclick="event.stopPropagation()">
+                </div>
                 <div class="inbox-cell inbox-status-cell"><i class="fas ${isUnread ? 'fa-circle' : 'fa-envelope-open'} read-status-icon"></i></div>
                 <div class="inbox-cell inbox-sender-cell">${escapeHtml(senderName)}</div>
                 <div class="inbox-cell inbox-subject-cell">${escapeHtml(subject)}</div>
@@ -125,8 +128,16 @@ export function renderEmailList() {
     }).join('');
 
     emailList.innerHTML = `
+        <div class="inbox-controls">
+            <button id="deleteSelectedBtn" class="btn-delete" disabled>
+                <i class="fas fa-trash"></i> DELETE (<span id="selectedCount">0</span>)
+            </button>
+        </div>
         <div class="inbox-table">
             <div class="inbox-table-header">
+                <div class="inbox-header-checkbox">
+                    <input type="checkbox" id="selectAllCheckbox" title="Select all">
+                </div>
                 <div class="inbox-header-status"></div>
                 <div class="inbox-header-sender">From</div>
                 <div class="inbox-header-subject">Subject</div>
@@ -138,9 +149,15 @@ export function renderEmailList() {
     `;
 
     emailList.querySelectorAll('.inbox-email-row').forEach(item => {
-        item.addEventListener('click', () => openEmail(item.dataset.emailId));
+        item.addEventListener('click', (e) => {
+            if (!e.target.matches('input[type="checkbox"]')) {
+                openEmail(item.dataset.emailId);
+            }
+        });
     });
 
+    // Add event listeners for checkboxes
+    bindCheckboxEvents();
     bindPaginationEvents();
 }
 
@@ -165,6 +182,62 @@ function bindPaginationEvents() {
             }
         });
     });
+}
+
+function bindCheckboxEvents() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const emailCheckboxes = document.querySelectorAll('.email-checkbox');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    // Handle select all checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+            const isChecked = selectAllCheckbox.checked;
+            emailCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateDeleteButtonState();
+        });
+    }
+
+    // Handle individual email checkboxes
+    emailCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            updateSelectAllState();
+            updateDeleteButtonState();
+        });
+    });
+
+    function updateSelectAllState() {
+        const checkedCount = document.querySelectorAll('.email-checkbox:checked').length;
+        const totalCount = emailCheckboxes.length;
+        
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedCount === totalCount;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        }
+    }
+
+    function updateDeleteButtonState() {
+        const checkedCount = document.querySelectorAll('.email-checkbox:checked').length;
+        
+        if (deleteBtn && selectedCountSpan) {
+            selectedCountSpan.textContent = checkedCount;
+            deleteBtn.disabled = checkedCount === 0;
+            
+            if (checkedCount === 0) {
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> DELETE (<span id="selectedCount">0</span>)';
+            } else {
+                deleteBtn.innerHTML = `<i class="fas fa-trash"></i> DELETE (<span id="selectedCount">${checkedCount}</span>)`;
+            }
+        }
+    }
+}
+
+export function getSelectedEmailIds() {
+    const checkedCheckboxes = document.querySelectorAll('.email-checkbox:checked');
+    return Array.from(checkedCheckboxes).map(checkbox => checkbox.dataset.emailId);
 }
 
 function renderEmptyInbox() {

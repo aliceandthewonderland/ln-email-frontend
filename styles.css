@@ -364,6 +364,43 @@ body {
     border-left: 4px solid #667eea;
 }
 
+/* Inbox Controls */
+.inbox-controls {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e8eaed;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.btn-delete {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:enabled:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-delete:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* Email Inbox Table Styles */
 .inbox-table {
     width: 100%;
@@ -375,7 +412,7 @@ body {
 
 .inbox-table-header {
     display: grid;
-    grid-template-columns: 50px 240px 1fr 130px;
+    grid-template-columns: 50px 50px 240px 1fr 130px;
     gap: 16px;
     padding: 12px 20px;
     background: #f8f9fa;
@@ -385,6 +422,20 @@ body {
     color: #5f6368;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.inbox-header-checkbox {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inbox-header-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #667eea;
 }
 
 .inbox-header-status {
@@ -407,7 +458,7 @@ body {
 
 .inbox-email-row {
     display: grid;
-    grid-template-columns: 50px 240px 1fr 130px;
+    grid-template-columns: 50px 50px 240px 1fr 130px;
     gap: 16px;
     padding: 12px 20px;
     background: white;
@@ -440,6 +491,19 @@ body {
     display: flex;
     align-items: center;
     overflow: hidden;
+}
+
+.inbox-checkbox-cell {
+    justify-content: center;
+    display: flex;
+    align-items: center;
+}
+
+.inbox-checkbox-cell input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #667eea;
 }
 
 .inbox-status-cell {
@@ -999,18 +1063,33 @@ body {
     }
 
     /* Inbox table mobile styles */
+    .inbox-controls {
+        padding: 10px 12px;
+    }
+
+    .btn-delete {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
     .inbox-table-header {
-        grid-template-columns: 40px 130px 1fr 70px;
-        gap: 8px;
+        grid-template-columns: 35px 35px 120px 1fr 65px;
+        gap: 6px;
         padding: 8px 12px;
         font-size: 11px;
     }
 
     .inbox-email-row {
-        grid-template-columns: 40px 130px 1fr 70px;
-        gap: 8px;
+        grid-template-columns: 35px 35px 120px 1fr 65px;
+        gap: 6px;
         padding: 10px 12px;
         min-height: 48px;
+    }
+
+    .inbox-header-checkbox input[type="checkbox"],
+    .inbox-checkbox-cell input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
     }
 
     .inbox-sender-cell {
