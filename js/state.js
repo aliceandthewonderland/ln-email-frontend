@@ -5,5 +5,6 @@ export const state = {
     currentView: 'inbox',
     currentPage: 1,
     autoRefreshTimer: null,
-    currentAttachments: []
+    currentAttachments: [],
+    selectedEmailIds: new Set()
 }; 

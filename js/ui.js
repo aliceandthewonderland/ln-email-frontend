@@ -87,6 +87,9 @@ export function renderEmailList() {
         return;
     }
 
+    // Clean up any selections for emails that no longer exist
+    cleanupSelectedEmails();
+
     const totalPages = Math.ceil(state.emails.length / ITEMS_PER_PAGE);
 
     if (state.currentPage > totalPages && totalPages > 0) state.currentPage = totalPages;
@@ -114,10 +117,12 @@ export function renderEmailList() {
         const subject = email.subject || 'No Subject';
         const isUnread = email.read === false;
         
+        const isSelected = state.selectedEmailIds.has(email.id);
+        
         return `
             <div class="inbox-email-row ${isUnread ? 'inbox-unread' : 'inbox-read'}" data-email-id="${email.id}">
                 <div class="inbox-cell inbox-checkbox-cell">
-                    <input type="checkbox" class="email-checkbox" data-email-id="${email.id}" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="email-checkbox" data-email-id="${email.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()">
                 </div>
                 <div class="inbox-cell inbox-status-cell"><i class="fas ${isUnread ? 'fa-circle' : 'fa-envelope-open'} read-status-icon"></i></div>
                 <div class="inbox-cell inbox-sender-cell">${escapeHtml(senderName)}</div>
@@ -196,6 +201,12 @@ function bindCheckboxEvents() {
             const isChecked = selectAllCheckbox.checked;
             emailCheckboxes.forEach(checkbox => {
                 checkbox.checked = isChecked;
+                const emailId = checkbox.dataset.emailId;
+                if (isChecked) {
+                    state.selectedEmailIds.add(emailId);
+                } else {
+                    state.selectedEmailIds.delete(emailId);
+                }
             });
             updateDeleteButtonState();
         });
@@ -204,23 +215,33 @@ function bindCheckboxEvents() {
     // Handle individual email checkboxes
     emailCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', () => {
+            const emailId = checkbox.dataset.emailId;
+            if (checkbox.checked) {
+                state.selectedEmailIds.add(emailId);
+            } else {
+                state.selectedEmailIds.delete(emailId);
+            }
             updateSelectAllState();
             updateDeleteButtonState();
         });
     });
+
+    // Initialize states based on current selections
+    updateSelectAllState();
+    updateDeleteButtonState();
 
     function updateSelectAllState() {
         const checkedCount = document.querySelectorAll('.email-checkbox:checked').length;
         const totalCount = emailCheckboxes.length;
         
         if (selectAllCheckbox) {
-            selectAllCheckbox.checked = checkedCount === totalCount;
+            selectAllCheckbox.checked = checkedCount === totalCount && totalCount > 0;
             selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
         }
     }
 
     function updateDeleteButtonState() {
-        const checkedCount = document.querySelectorAll('.email-checkbox:checked').length;
+        const checkedCount = state.selectedEmailIds.size;
         
         if (deleteBtn && selectedCountSpan) {
             selectedCountSpan.textContent = checkedCount;
@@ -236,8 +257,25 @@ function bindCheckboxEvents() {
 }
 
 export function getSelectedEmailIds() {
-    const checkedCheckboxes = document.querySelectorAll('.email-checkbox:checked');
-    return Array.from(checkedCheckboxes).map(checkbox => checkbox.dataset.emailId);
+    return Array.from(state.selectedEmailIds);
+}
+
+export function clearSelectedEmails() {
+    state.selectedEmailIds.clear();
+}
+
+function cleanupSelectedEmails() {
+    // Remove any selected email IDs that no longer exist in the current email list
+    const currentEmailIds = new Set(state.emails.map(email => email.id));
+    const toRemove = [];
+    
+    for (const selectedId of state.selectedEmailIds) {
+        if (!currentEmailIds.has(selectedId)) {
+            toRemove.push(selectedId);
+        }
+    }
+    
+    toRemove.forEach(id => state.selectedEmailIds.delete(id));
 }
 
 function renderEmptyInbox() {
