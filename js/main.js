@@ -1,5 +1,5 @@
-import { sendEmail, checkApiHealth } from './api.js';
-import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading } from './ui.js';
+import { sendEmail, checkApiHealth, deleteEmails } from './api.js';
+import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList } from './ui.js';
 import { handleConnect, handleDisconnect, tryAutoConnect } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
@@ -99,6 +99,44 @@ async function handleSendEmail(e) {
     }
 }
 
+async function handleDeleteSelected() {
+    const selectedIds = getSelectedEmailIds();
+    
+    if (selectedIds.length === 0) {
+        showStatus('No emails selected for deletion', 'error');
+        return;
+    }
+
+    // Show confirmation dialog
+    const confirmMessage = `Are you sure you want to delete ${selectedIds.length} email${selectedIds.length > 1 ? 's' : ''}? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+    deleteBtn.disabled = true;
+
+    try {
+        const response = await deleteEmails(selectedIds);
+        
+        if (response.success) {
+            showStatus(`Successfully deleted ${selectedIds.length} email${selectedIds.length > 1 ? 's' : ''}`, 'success');
+            clearSelectedEmails();
+            // Refresh the inbox to show updated email list
+            await refreshInbox();
+        } else {
+            throw new Error(response.error || 'Failed to delete emails');
+        }
+    } catch (error) {
+        showStatus(`Failed to delete emails: ${error.message}`, 'error');
+    } finally {
+        deleteBtn.innerHTML = originalText;
+        deleteBtn.disabled = selectedIds.length === 0;
+    }
+}
+
 function bindEvents() {
     document.getElementById('connectBtn').addEventListener('click', handleConnect);
     document.getElementById('accessToken').addEventListener('keypress', (e) => {
@@ -121,6 +159,13 @@ function bindEvents() {
 
     document.getElementById('backToInbox').addEventListener('click', () => showView('inbox'));
     document.getElementById('refreshHealthBtn').addEventListener('click', handleHealthCheck);
+    
+    // Add event listener for delete button - using event delegation since button is dynamically created
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#deleteSelectedBtn')) {
+            handleDeleteSelected();
+        }
+    });
 }
 
 function init() {

@@ -98,4 +98,23 @@ export async function checkApiHealth() {
             error: error.message
         };
     }
+}
+
+export async function deleteEmails(emailIds) {
+    try {
+        const response = await makeRequest('/emails', {
+            method: 'DELETE',
+            body: JSON.stringify({ email_ids: emailIds })
+        });
+        return {
+            success: true,
+            data: response
+        };
+    } catch (error) {
+        console.error('Delete emails failed:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
 } 
