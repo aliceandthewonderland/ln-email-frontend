@@ -587,30 +587,40 @@ export function updatePaymentModal(invoiceData) {
     document.getElementById('paymentAmount').textContent = `${invoiceData.price_sats} sats`;
     document.getElementById('paymentHashValue').textContent = invoiceData.payment_hash;
     
+    // Set loading state for QR code
+    const qrContainer = document.querySelector('.qr-code-container');
+    qrContainer.innerHTML = `
+        <div class="qr-loader">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Generating QR Code...</p>
+        </div>
+    `;
+
     // Generate QR code with library availability check
     generateQRCode(invoiceData.payment_request);
 }
 
 async function waitForQRCodeLibrary() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         if (typeof QRCode !== 'undefined') {
             resolve();
             return;
         }
         
+        let attempts = 0;
+        const maxAttempts = 100; // 5 seconds total
+
         // Poll for library availability
         const checkInterval = setInterval(() => {
+            attempts++;
             if (typeof QRCode !== 'undefined') {
                 clearInterval(checkInterval);
                 resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                reject(new Error('QRCode library failed to load within timeout'));
             }
         }, 50); // Check every 50ms
-        
-        // Timeout after 5 seconds
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            resolve();
-        }, 5000);
     });
 }
 
@@ -623,7 +633,13 @@ async function generateQRCode(paymentRequest) {
             throw new Error('QRCode library failed to load');
         }
         
-        const canvas = document.getElementById('qrCodeCanvas');
+        const qrContainer = document.querySelector('.qr-code-container');
+        qrContainer.innerHTML = ''; // Clear loader
+        
+        const canvas = document.createElement('canvas');
+        canvas.id = 'qrCodeCanvas';
+        qrContainer.appendChild(canvas);
+
         QRCode.toCanvas(canvas, paymentRequest, {
             width: 200,
             margin: 2,
@@ -647,11 +663,11 @@ async function generateQRCode(paymentRequest) {
 
 function showFallbackQRCode(paymentRequest) {
     // Fallback: show the invoice as text if QR code fails
-    const canvas = document.getElementById('qrCodeCanvas');
-    const container = canvas.parentElement;
-    
+    const container = document.querySelector('.qr-code-container');
+    if (!container) return;
+
     container.innerHTML = `
-        <div style="padding: 20px; text-align: center; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px;">
+        <div style="padding: 20px; text-align: center; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; width: 100%;">
             <i class="fas fa-qrcode" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
             <p style="margin-bottom: 10px; font-weight: 600; color: #495057;">QR Code Unavailable</p>
             <p style="font-size: 12px; color: #6c757d; margin-bottom: 15px;">Please copy the invoice manually:</p>

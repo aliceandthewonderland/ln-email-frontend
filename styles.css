@@ -1376,11 +1376,20 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
-    background: white;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 200px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.qr-loader {
+    text-align: center;
+    color: #6c757d;
+}
+
+.qr-loader .fas {
+    font-size: 32px;
+    margin-bottom: 15px;
 }
 
 #qrCodeCanvas {
@@ -1390,7 +1399,8 @@ body {
 
 .payment-status {
     text-align: center;
-    padding: 20px;
+    margin-top: 15px;
+    padding: 10px;
     background: #fff3cd;
     border: 1px solid #ffeaa7;
     border-radius: 8px;
