@@ -626,7 +626,6 @@ async function waitForQRCodeLibrary() {
 
 async function generateQRCode(paymentRequest) {
     try {
-        // Wait for QRCode library to be available
         await waitForQRCodeLibrary();
         
         if (typeof QRCode === 'undefined') {
@@ -636,24 +635,16 @@ async function generateQRCode(paymentRequest) {
         const qrContainer = document.querySelector('.qr-code-container');
         qrContainer.innerHTML = ''; // Clear loader
         
-        const canvas = document.createElement('canvas');
-        canvas.id = 'qrCodeCanvas';
-        qrContainer.appendChild(canvas);
-
-        QRCode.toCanvas(canvas, paymentRequest, {
+        // The library creates its own canvas, so we just give it the container.
+        new QRCode(qrContainer, {
+            text: paymentRequest,
             width: 200,
-            margin: 2,
-            color: {
-                dark: '#000000',
-                light: '#FFFFFF'
-            }
-        }, function (error) {
-            if (error) {
-                console.error('QR Code generation failed:', error);
-                showStatus('Failed to generate QR code', 'error');
-                showFallbackQRCode(paymentRequest);
-            }
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
         });
+
     } catch (error) {
         console.error('QR Code library error:', error);
         showStatus('QR code library unavailable, showing text invoice', 'warning');
