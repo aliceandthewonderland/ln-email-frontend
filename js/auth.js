@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { checkAccountAuthorization, checkApiHealth } from './api.js';
-import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm, updateLoginHealthStatus, updateLoginHealthStatusLoading } from './ui.js';
+import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm, updateLoginHealthStatus, updateLoginHealthStatusLoading, updateConnectButtonState } from './ui.js';
 import { refreshInbox, startAutoRefresh, stopAutoRefresh } from './inbox.js';
 
 function getSavedToken() {
@@ -43,15 +43,17 @@ export async function handleConnect() {
     connectBtn.disabled = true;
 
     try {
-        // First check API health
+        // First check API health - REQUIRED before authentication
         showStatus('Checking API health...', 'info');
         const healthResult = await checkApiHealth();
         updateLoginHealthStatus(healthResult);
         
         if (!healthResult.success) {
-            showStatus('Warning: API health check failed. Connection may not work properly.', 'warning');
+            showStatus('API health check failed. Cannot proceed with authentication until API is healthy.', 'error');
+            return;
         }
         
+        showStatus('API health check passed. Proceeding with authentication...', 'info');
         state.accessToken = token;
         
         if (await checkAccountAuthorization()) {
@@ -94,8 +96,21 @@ export function handleDisconnect() {
 }
 
 export async function tryAutoConnect() {
+    // Perform initial health check first
+    showTokenModal();
+    await performLoginHealthCheck();
+    
     const savedToken = getSavedToken();
     if (savedToken) {
+        // Check API health before attempting auto-connect
+        const healthResult = await checkApiHealth();
+        updateLoginHealthStatus(healthResult);
+        
+        if (!healthResult.success) {
+            showStatus('API health check failed. Auto-connect disabled until API is healthy.', 'warning');
+            return;
+        }
+        
         document.getElementById('accessToken').value = savedToken;
         state.accessToken = savedToken;
         
@@ -112,9 +127,6 @@ export async function tryAutoConnect() {
             state.accessToken = null;
         }
     }
-    showTokenModal();
-    // Perform initial health check on login page
-    await performLoginHealthCheck();
 }
 
 export async function performLoginHealthCheck() {

@@ -42,13 +42,17 @@
                     
                     <div class="input-group">
                         <input type="password" id="accessToken" placeholder="Enter your access token" />
-                        <button id="connectBtn" class="btn-primary">
+                        <button id="connectBtn" class="btn-primary" disabled title="API health check must pass before authentication">
                             <i class="fas fa-sign-in-alt"></i> Connect
                         </button>
                     </div>
                     <div class="help-text">
                         <i class="fas fa-info-circle"></i>
                         Don't have an access token? Create an email account first using the API.
+                    </div>
+                    <div class="health-requirement-notice">
+                        <i class="fas fa-heartbeat"></i>
+                        <strong>Note:</strong> API health check must pass before you are authenticated.
                     </div>
                 </div>
             </div>

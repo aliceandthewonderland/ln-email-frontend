@@ -535,6 +535,9 @@ export function updateLoginHealthStatus(healthData) {
         loginHealthVersionValue.textContent = '-';
         loginHealthTimestampValue.textContent = new Date().toLocaleString();
     }
+    
+    // Update connect button state based on health status
+    updateConnectButtonState(healthData.success);
 }
 
 export function updateLoginHealthStatusLoading() {
@@ -550,4 +553,22 @@ export function updateLoginHealthStatusLoading() {
     // Update detailed status
     loginHealthStatusValue.textContent = 'Checking...';
     loginHealthStatusValue.style.color = '#ffc107';
+    
+    // Disable connect button while checking
+    updateConnectButtonState(false);
+}
+
+export function updateConnectButtonState(isHealthy) {
+    const connectBtn = document.getElementById('connectBtn');
+    const accessToken = document.getElementById('accessToken');
+    
+    if (isHealthy) {
+        connectBtn.disabled = false;
+        connectBtn.title = '';
+        connectBtn.style.opacity = '1';
+    } else {
+        connectBtn.disabled = true;
+        connectBtn.title = 'API health check must pass before authentication';
+        connectBtn.style.opacity = '0.6';
+    }
 }

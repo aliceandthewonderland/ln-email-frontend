@@ -1,5 +1,5 @@
 import { sendEmail, checkApiHealth, deleteEmails } from './api.js';
-import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList } from './ui.js';
+import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList, updateConnectButtonState } from './ui.js';
 import { handleConnect, handleDisconnect, tryAutoConnect, performLoginHealthCheck } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
@@ -165,10 +165,13 @@ function bindEvents() {
         details.classList.toggle('hidden');
     });
 
-    // Allow enter key to connect
+    // Allow enter key to connect (if health check passes)
     document.getElementById('accessToken').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            handleConnect();
+            const connectBtn = document.getElementById('connectBtn');
+            if (!connectBtn.disabled) {
+                handleConnect();
+            }
         }
     });
 
