@@ -137,6 +137,41 @@ async function handleDeleteSelected() {
     }
 }
 
+async function handleCopyEmail() {
+    const emailSpan = document.getElementById('accountEmail');
+    const emailText = emailSpan.textContent;
+    
+    // Check if the email is loaded (not "Loading...")
+    if (!emailText || emailText === 'Loading...') {
+        showStatus('Email address not yet loaded', 'error');
+        return;
+    }
+
+    try {
+        // Use the modern Clipboard API if available
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(emailText);
+        } else {
+            // Fallback for older browsers or non-secure contexts
+            const textArea = document.createElement('textarea');
+            textArea.value = emailText;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+        
+        showStatus(`Email address copied: ${emailText}`, 'success');
+    } catch (error) {
+        console.error('Failed to copy email:', error);
+        showStatus('Failed to copy email address to clipboard', 'error');
+    }
+}
+
 function bindEvents() {
     // Authentication events
     document.getElementById('connectBtn').addEventListener('click', handleConnect);
@@ -202,6 +237,9 @@ function bindEvents() {
             handleDeleteSelected();
         }
     });
+
+    // Copy email address events
+    document.getElementById('accountEmailContainer').addEventListener('click', handleCopyEmail);
 }
 
 function init() {

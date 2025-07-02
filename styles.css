@@ -220,6 +220,37 @@ body {
     gap: 6px;
 }
 
+.account-email.clickable {
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.account-email.clickable:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.account-email.clickable:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.copy-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+.account-email.clickable:hover .copy-icon {
+    opacity: 0.8;
+}
+
 .account-info i {
     font-size: 12px;
     opacity: 0.8;
