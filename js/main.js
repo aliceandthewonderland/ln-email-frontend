@@ -128,7 +128,7 @@ function startPaymentPolling() {
         try {
             const statusResponse = await checkPaymentStatus(state.currentPayment.payment_hash);
             
-            if (statusResponse.paid) {
+            if (statusResponse.payment_status === 'paid') {
                 // Payment successful
                 updatePaymentStatus('success', 'Payment confirmed! Email sent successfully!');
                 
@@ -143,7 +143,7 @@ function startPaymentPolling() {
                 }, 2000);
                 
                 stopPaymentPolling();
-            } else if (statusResponse.expired) {
+            } else if (statusResponse.payment_status === 'expired') {
                 // Payment expired
                 updatePaymentStatus('error', 'Payment expired. Please try again.');
                 stopPaymentPolling();
