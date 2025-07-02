@@ -6,5 +6,8 @@ export const state = {
     currentPage: 1,
     autoRefreshTimer: null,
     currentAttachments: [],
-    selectedEmailIds: new Set()
+    selectedEmailIds: new Set(),
+    // Payment tracking
+    currentPayment: null,
+    paymentPollTimer: null
 }; 

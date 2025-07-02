@@ -1,6 +1,6 @@
 import { state } from './state.js';
 import { checkAccountAuthorization, checkApiHealth } from './api.js';
-import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm, updateLoginHealthStatus, updateLoginHealthStatusLoading, updateConnectButtonState } from './ui.js';
+import { showStatus, showTokenModal, hideTokenModal, showMainApp, hideMainApp, updateAccountDisplay, clearComposeForm, updateLoginHealthStatus, updateLoginHealthStatusLoading, updateConnectButtonState, hidePaymentModal } from './ui.js';
 import { refreshInbox, startAutoRefresh, stopAutoRefresh } from './inbox.js';
 
 function getSavedToken() {
@@ -81,12 +81,20 @@ export function handleDisconnect() {
     stopAutoRefresh();
     clearSavedToken();
     
+    // Clear payment polling if active
+    if (state.paymentPollTimer) {
+        clearInterval(state.paymentPollTimer);
+        state.paymentPollTimer = null;
+    }
+    
     state.accessToken = null;
     state.accountInfo = null;
     state.emails = [];
     state.currentPage = 1;
+    state.currentPayment = null;
     
     hideMainApp();
+    hidePaymentModal();
     showTokenModal();
     clearComposeForm();
     document.getElementById('accessToken').value = '';

@@ -1,9 +1,10 @@
-import { sendEmail, checkApiHealth, deleteEmails } from './api.js';
-import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList, updateConnectButtonState } from './ui.js';
+import { sendEmail, checkApiHealth, deleteEmails, checkPaymentStatus } from './api.js';
+import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList, updateConnectButtonState, showPaymentModal, hidePaymentModal, updatePaymentModal, updatePaymentStatus } from './ui.js';
 import { handleConnect, handleDisconnect, tryAutoConnect, performLoginHealthCheck } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
-import { HEALTH_CHECK_INTERVAL } from './config.js';
+import { HEALTH_CHECK_INTERVAL, PAYMENT_POLL_INTERVAL } from './config.js';
+import { state } from './state.js';
 
 async function handleRefreshClick() {
     const refreshBtn = document.getElementById('refreshBtn');
@@ -79,23 +80,129 @@ async function handleSendEmail(e) {
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Invoice...';
     submitBtn.disabled = true;
 
     try {
-        const response = await sendEmail(recipient, subject, body);
-        showStatus('Email sent successfully!', 'success');
-        clearComposeForm();
-        showView('inbox');
+        // Get the Lightning invoice
+        const invoiceResponse = await sendEmail(recipient, subject, body);
         
-        if (response.payment_hash) {
-            showStatus(`Payment hash: ${response.payment_hash}`, 'info');
-        }
+        // Store payment data in state
+        state.currentPayment = {
+            payment_hash: invoiceResponse.payment_hash,
+            payment_request: invoiceResponse.payment_request,
+            price_sats: invoiceResponse.price_sats,
+            sender_email: invoiceResponse.sender_email,
+            recipient: invoiceResponse.recipient,
+            subject: invoiceResponse.subject,
+            originalFormData: { recipient, subject, body }
+        };
+        
+        // Show payment modal with invoice details
+        updatePaymentModal(invoiceResponse);
+        showPaymentModal();
+        
+        // Start polling for payment status
+        startPaymentPolling();
+        
+        showStatus('Lightning invoice created! Please scan the QR code to pay.', 'info');
+        
     } catch (error) {
-        showStatus(`Failed to send email: ${error.message}`, 'error');
+        showStatus(`Failed to create invoice: ${error.message}`, 'error');
     } finally {
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Email';
+        submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
+    }
+}
+
+function startPaymentPolling() {
+    if (state.paymentPollTimer) {
+        clearInterval(state.paymentPollTimer);
+    }
+    
+    const pollPayment = async () => {
+        if (!state.currentPayment) {
+            return;
+        }
+        
+        try {
+            const statusResponse = await checkPaymentStatus(state.currentPayment.payment_hash);
+            
+            if (statusResponse.paid) {
+                // Payment successful
+                updatePaymentStatus('success', 'Payment confirmed! Email sent successfully!');
+                
+                setTimeout(() => {
+                    hidePaymentModal();
+                    clearComposeForm();
+                    showView('inbox');
+                    showStatus('Email sent successfully!', 'success');
+                    
+                    // Refresh inbox to show any new emails
+                    refreshInbox();
+                }, 2000);
+                
+                stopPaymentPolling();
+            } else if (statusResponse.expired) {
+                // Payment expired
+                updatePaymentStatus('error', 'Payment expired. Please try again.');
+                stopPaymentPolling();
+            } else {
+                // Still pending
+                updatePaymentStatus('pending', 'Waiting for payment...');
+            }
+        } catch (error) {
+            console.error('Payment status check failed:', error);
+            updatePaymentStatus('error', 'Failed to check payment status');
+        }
+    };
+    
+    // Poll immediately, then every 3 seconds
+    pollPayment();
+    state.paymentPollTimer = setInterval(pollPayment, PAYMENT_POLL_INTERVAL);
+}
+
+function stopPaymentPolling() {
+    if (state.paymentPollTimer) {
+        clearInterval(state.paymentPollTimer);
+        state.paymentPollTimer = null;
+    }
+}
+
+function handleCancelPayment() {
+    stopPaymentPolling();
+    hidePaymentModal();
+    state.currentPayment = null;
+    showStatus('Payment cancelled', 'info');
+}
+
+async function handleCopyInvoice() {
+    if (!state.currentPayment || !state.currentPayment.payment_request) {
+        showStatus('No invoice to copy', 'error');
+        return;
+    }
+    
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(state.currentPayment.payment_request);
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = state.currentPayment.payment_request;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+        
+        showStatus('Lightning invoice copied to clipboard!', 'success');
+    } catch (error) {
+        console.error('Failed to copy invoice:', error);
+        showStatus('Failed to copy invoice to clipboard', 'error');
     }
 }
 
@@ -240,6 +347,10 @@ function bindEvents() {
 
     // Copy email address events
     document.getElementById('accountEmailContainer').addEventListener('click', handleCopyEmail);
+    
+    // Payment modal events
+    document.getElementById('cancelPaymentBtn').addEventListener('click', handleCancelPayment);
+    document.getElementById('copyInvoiceBtn').addEventListener('click', handleCopyInvoice);
 }
 
 function init() {

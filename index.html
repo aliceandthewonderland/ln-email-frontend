@@ -58,6 +58,58 @@
             </div>
         </div>
 
+        <!-- Payment Invoice Modal -->
+        <div id="paymentModal" class="modal">
+            <div class="modal-content payment-modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-bolt"></i> Lightning Payment Required</h2>
+                    <p>Scan the QR code below to pay for sending this email</p>
+                </div>
+                <div class="modal-body">
+                    <div class="payment-info">
+                        <div class="payment-details">
+                            <div class="payment-detail-item">
+                                <span class="payment-label">To:</span>
+                                <span id="paymentRecipient" class="payment-value">-</span>
+                            </div>
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Subject:</span>
+                                <span id="paymentSubject" class="payment-value">-</span>
+                            </div>
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Amount:</span>
+                                <span id="paymentAmount" class="payment-value">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="qr-code-container">
+                            <canvas id="qrCodeCanvas"></canvas>
+                        </div>
+                        
+                        <div class="payment-status">
+                            <div class="payment-status-indicator">
+                                <i id="paymentStatusIcon" class="fas fa-circle-notch fa-spin" style="color: #ffc107;"></i>
+                                <span id="paymentStatusText">Waiting for payment...</span>
+                            </div>
+                            <div class="payment-hash">
+                                <span class="payment-label">Payment Hash:</span>
+                                <span id="paymentHashValue" class="payment-hash-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-actions">
+                        <button id="cancelPaymentBtn" class="btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button id="copyInvoiceBtn" class="btn-secondary">
+                            <i class="fas fa-copy"></i> Copy Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Application -->
         <div id="mainApp" class="main-app">
             <!-- Header -->
@@ -208,6 +260,9 @@
         <div id="statusContainer" class="status-container"></div>
     </div>
 
+    <!-- Load QR Code library before modules -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    
     <!-- Load the main script -->
     <script type="module" src="js/main.js"></script>
 </body>

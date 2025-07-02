@@ -572,3 +572,123 @@ export function updateConnectButtonState(isHealthy) {
         connectBtn.style.opacity = '0.6';
     }
 }
+
+export function showPaymentModal() {
+    document.getElementById('paymentModal').classList.add('active');
+}
+
+export function hidePaymentModal() {
+    document.getElementById('paymentModal').classList.remove('active');
+}
+
+export function updatePaymentModal(invoiceData) {
+    document.getElementById('paymentRecipient').textContent = invoiceData.recipient;
+    document.getElementById('paymentSubject').textContent = invoiceData.subject;
+    document.getElementById('paymentAmount').textContent = `${invoiceData.price_sats} sats`;
+    document.getElementById('paymentHashValue').textContent = invoiceData.payment_hash;
+    
+    // Generate QR code with library availability check
+    generateQRCode(invoiceData.payment_request);
+}
+
+async function waitForQRCodeLibrary() {
+    return new Promise((resolve) => {
+        if (typeof QRCode !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        // Poll for library availability
+        const checkInterval = setInterval(() => {
+            if (typeof QRCode !== 'undefined') {
+                clearInterval(checkInterval);
+                resolve();
+            }
+        }, 50); // Check every 50ms
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            resolve();
+        }, 5000);
+    });
+}
+
+async function generateQRCode(paymentRequest) {
+    try {
+        // Wait for QRCode library to be available
+        await waitForQRCodeLibrary();
+        
+        if (typeof QRCode === 'undefined') {
+            throw new Error('QRCode library failed to load');
+        }
+        
+        const canvas = document.getElementById('qrCodeCanvas');
+        QRCode.toCanvas(canvas, paymentRequest, {
+            width: 200,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
+        }, function (error) {
+            if (error) {
+                console.error('QR Code generation failed:', error);
+                showStatus('Failed to generate QR code', 'error');
+                showFallbackQRCode(paymentRequest);
+            }
+        });
+    } catch (error) {
+        console.error('QR Code library error:', error);
+        showStatus('QR code library unavailable, showing text invoice', 'warning');
+        showFallbackQRCode(paymentRequest);
+    }
+}
+
+function showFallbackQRCode(paymentRequest) {
+    // Fallback: show the invoice as text if QR code fails
+    const canvas = document.getElementById('qrCodeCanvas');
+    const container = canvas.parentElement;
+    
+    container.innerHTML = `
+        <div style="padding: 20px; text-align: center; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px;">
+            <i class="fas fa-qrcode" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
+            <p style="margin-bottom: 10px; font-weight: 600; color: #495057;">QR Code Unavailable</p>
+            <p style="font-size: 12px; color: #6c757d; margin-bottom: 15px;">Please copy the invoice manually:</p>
+            <textarea readonly style="width: 100%; height: 80px; font-family: monospace; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 8px; resize: none;">${paymentRequest}</textarea>
+        </div>
+    `;
+}
+
+export function updatePaymentStatus(status, message) {
+    const statusContainer = document.querySelector('.payment-status');
+    const statusIcon = document.getElementById('paymentStatusIcon');
+    const statusText = document.getElementById('paymentStatusText');
+    
+    statusContainer.className = 'payment-status';
+    
+    switch (status) {
+        case 'pending':
+            statusContainer.classList.add('pending');
+            statusIcon.className = 'fas fa-circle-notch fa-spin';
+            statusIcon.style.color = '#ffc107';
+            statusText.textContent = message || 'Waiting for payment...';
+            break;
+        case 'success':
+            statusContainer.classList.add('success');
+            statusIcon.className = 'fas fa-check-circle';
+            statusIcon.style.color = '#28a745';
+            statusText.textContent = message || 'Payment confirmed!';
+            break;
+        case 'error':
+            statusContainer.classList.add('error');
+            statusIcon.className = 'fas fa-exclamation-circle';
+            statusIcon.style.color = '#dc3545';
+            statusText.textContent = message || 'Payment failed';
+            break;
+        default:
+            statusIcon.className = 'fas fa-circle-notch fa-spin';
+            statusIcon.style.color = '#ffc107';
+            statusText.textContent = message || 'Checking payment status...';
+    }
+}

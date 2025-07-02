@@ -84,6 +84,12 @@ export async function sendEmail(recipient, subject, body) {
     });
 }
 
+export async function checkPaymentStatus(paymentHash) {
+    return await makeRequest(`/email/send/status/${paymentHash}`, {
+        method: 'GET'
+    });
+}
+
 export async function checkApiHealth() {
     try {
         const response = await makeRequest('/health');
