@@ -710,7 +710,7 @@ export function hideAccountCreationModal() {
 
 export function updateAccountCreationModal(accountData) {
     document.getElementById('accountEmailAddress').textContent = accountData.email_address;
-    document.getElementById('accountAccessToken').textContent = accountData.access_token;
+    document.getElementById('accountAccessTokenText').textContent = accountData.access_token;
     document.getElementById('accountAmount').textContent = `${accountData.price_sats} sats`;
     document.getElementById('accountPaymentHashValue').textContent = accountData.payment_hash;
     

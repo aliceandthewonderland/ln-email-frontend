@@ -356,6 +356,7 @@ function bindEvents() {
     document.getElementById('createAccountLink').addEventListener('click', handleCreateAccount);
     document.getElementById('cancelAccountCreationBtn').addEventListener('click', handleCancelAccountCreation);
     document.getElementById('copyAccountInvoiceBtn').addEventListener('click', handleCopyAccountInvoice);
+    document.getElementById('accountAccessToken').addEventListener('click', handleCopyAccessToken);
 }
 
 function init() {
@@ -512,5 +513,39 @@ async function handleCopyAccountInvoice() {
     } catch (error) {
         console.error('Failed to copy account invoice:', error);
         showStatus('Failed to copy invoice to clipboard', 'error');
+    }
+}
+
+async function handleCopyAccessToken() {
+    const tokenText = document.getElementById('accountAccessTokenText').textContent;
+    
+    // Check if the token is loaded (not "-")
+    if (!tokenText || tokenText === '-') {
+        showStatus('Access token not yet loaded', 'error');
+        return;
+    }
+
+    try {
+        // Use the modern Clipboard API if available
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(tokenText);
+        } else {
+            // Fallback for older browsers or non-secure contexts
+            const textArea = document.createElement('textarea');
+            textArea.value = tokenText;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+        
+        showStatus('Access token copied to clipboard!', 'success');
+    } catch (error) {
+        console.error('Failed to copy access token:', error);
+        showStatus('Failed to copy access token to clipboard', 'error');
     }
 } 
