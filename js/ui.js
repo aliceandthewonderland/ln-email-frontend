@@ -699,3 +699,107 @@ export function updatePaymentStatus(status, message) {
             statusText.textContent = message || 'Checking payment status...';
     }
 }
+
+export function showAccountCreationModal() {
+    document.getElementById('accountCreationModal').classList.add('active');
+}
+
+export function hideAccountCreationModal() {
+    document.getElementById('accountCreationModal').classList.remove('active');
+}
+
+export function updateAccountCreationModal(accountData) {
+    document.getElementById('accountEmailAddress').textContent = accountData.email_address;
+    document.getElementById('accountAccessToken').textContent = accountData.access_token;
+    document.getElementById('accountAmount').textContent = `${accountData.price_sats} sats`;
+    document.getElementById('accountPaymentHashValue').textContent = accountData.payment_hash;
+    
+    // Set loading state for QR code
+    const qrContainer = document.querySelector('#accountCreationModal .qr-code-container');
+    qrContainer.innerHTML = `
+        <div class="qr-loader">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Generating QR Code...</p>
+        </div>
+    `;
+    
+    // Generate QR code with library availability check
+    generateAccountQRCode(accountData.payment_request);
+}
+
+async function generateAccountQRCode(paymentRequest) {
+    try {
+        await waitForQRCodeLibrary();
+        
+        if (typeof QRCode === 'undefined') {
+            throw new Error('QRCode library failed to load');
+        }
+        
+        const qrContainer = document.querySelector('#accountCreationModal .qr-code-container');
+        
+        // Clear container and create centered wrapper
+        qrContainer.innerHTML = '';
+        
+        // Create a centered div wrapper for the QR code
+        const qrWrapper = document.createElement('div');
+        qrWrapper.style.display = 'flex';
+        qrWrapper.style.justifyContent = 'center';
+        qrWrapper.style.alignItems = 'center';
+        qrWrapper.style.width = '100%';
+        qrWrapper.style.height = '100%';
+        
+        qrContainer.appendChild(qrWrapper);
+        
+        new QRCode(qrWrapper, {
+            text: paymentRequest,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        
+    } catch (error) {
+        console.error('Account QR Code library error:', error);
+        showStatus('QR code library unavailable, showing text invoice', 'warning');
+        showAccountFallbackQRCode(paymentRequest);
+    }
+}
+
+function showAccountFallbackQRCode(paymentRequest) {
+    // Fallback: show the invoice as text if QR code fails
+    const container = document.querySelector('#accountCreationModal .qr-code-container');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 20px; border: 2px dashed #dee2e6; border-radius: 8px; background-color: #f8f9fa;">
+            <i class="fas fa-qrcode" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
+            <p style="margin-bottom: 10px; font-weight: 600; color: #495057;">QR Code Unavailable</p>
+            <p style="font-size: 12px; color: #6c757d; margin-bottom: 15px;">Please copy the invoice manually:</p>
+            <textarea readonly style="width: 100%; height: 80px; font-family: monospace; font-size: 11px; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; resize: none;">${paymentRequest}</textarea>
+        </div>
+    `;
+}
+
+export function updateAccountPaymentStatus(status, message) {
+    const statusIcon = document.getElementById('accountPaymentStatusIcon');
+    const statusText = document.getElementById('accountPaymentStatusText');
+    
+    statusText.textContent = message;
+    
+    // Remove existing status classes
+    statusIcon.className = statusIcon.className.replace(/fa-(check-circle|exclamation-circle|circle-notch|spin)/g, '');
+    
+    switch (status) {
+        case 'pending':
+            statusIcon.classList.add('fa-circle-notch', 'fa-spin');
+            statusIcon.style.color = '#ffc107';
+            break;
+        case 'success':
+            statusIcon.classList.add('fa-check-circle');
+            statusIcon.style.color = '#28a745';
+            break;
+        case 'error':
+            statusIcon.classList.add('fa-exclamation-circle');
+            statusIcon.style.color = '#dc3545';
+            break;
+    }
+}

@@ -123,4 +123,16 @@ export async function deleteEmails(emailIds) {
             error: error.message
         };
     }
+}
+
+export async function createEmailAccount() {
+    return await makeRequest('/email', {
+        method: 'POST'
+    });
+}
+
+export async function checkAccountPaymentStatus(paymentHash) {
+    return await makeRequest(`/payment/${paymentHash}`, {
+        method: 'GET'
+    });
 } 

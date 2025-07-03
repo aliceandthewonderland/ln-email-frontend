@@ -1,5 +1,5 @@
-import { sendEmail, checkApiHealth, deleteEmails, checkPaymentStatus } from './api.js';
-import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList, updateConnectButtonState, showPaymentModal, hidePaymentModal, updatePaymentModal, updatePaymentStatus } from './ui.js';
+import { sendEmail, checkApiHealth, deleteEmails, checkPaymentStatus, createEmailAccount, checkAccountPaymentStatus } from './api.js';
+import { showStatus, showView, clearComposeForm, updateHealthStatus, updateHealthStatusLoading, getSelectedEmailIds, clearSelectedEmails, renderEmailList, updateConnectButtonState, showPaymentModal, hidePaymentModal, updatePaymentModal, updatePaymentStatus, showAccountCreationModal, hideAccountCreationModal, updateAccountCreationModal, updateAccountPaymentStatus } from './ui.js';
 import { handleConnect, handleDisconnect, tryAutoConnect, performLoginHealthCheck } from './auth.js';
 import { isValidEmail } from './utils.js';
 import { refreshInbox } from './inbox.js';
@@ -351,6 +351,11 @@ function bindEvents() {
     // Payment modal events
     document.getElementById('cancelPaymentBtn').addEventListener('click', handleCancelPayment);
     document.getElementById('copyInvoiceBtn').addEventListener('click', handleCopyInvoice);
+
+    // Account creation events
+    document.getElementById('createAccountLink').addEventListener('click', handleCreateAccount);
+    document.getElementById('cancelAccountCreationBtn').addEventListener('click', handleCancelAccountCreation);
+    document.getElementById('copyAccountInvoiceBtn').addEventListener('click', handleCopyAccountInvoice);
 }
 
 function init() {
@@ -366,4 +371,146 @@ function init() {
 }
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', init); 
+document.addEventListener('DOMContentLoaded', init);
+
+async function handleCreateAccount() {
+    const createBtn = document.getElementById('createAccountLink');
+    const originalText = createBtn.textContent;
+    createBtn.textContent = 'Creating account...';
+    createBtn.style.pointerEvents = 'none';
+
+    try {
+        // Call the API to create email account
+        const accountResponse = await createEmailAccount();
+        
+        // Store account creation data in state
+        state.currentAccountCreation = {
+            payment_hash: accountResponse.payment_hash,
+            payment_request: accountResponse.payment_request,
+            price_sats: accountResponse.price_sats,
+            email_address: accountResponse.email_address,
+            access_token: accountResponse.access_token,
+            expires_at: accountResponse.expires_at
+        };
+        
+        // Show account creation modal with invoice details
+        updateAccountCreationModal(accountResponse);
+        showAccountCreationModal();
+        
+        // Start polling for payment status
+        startAccountCreationPolling();
+        
+        showStatus('Lightning invoice created for account! Please scan the QR code to pay.', 'info');
+        
+    } catch (error) {
+        showStatus(`Failed to create account invoice: ${error.message}`, 'error');
+    } finally {
+        createBtn.textContent = originalText;
+        createBtn.style.pointerEvents = 'auto';
+    }
+}
+
+function startAccountCreationPolling() {
+    if (state.accountCreationPollTimer) {
+        clearInterval(state.accountCreationPollTimer);
+    }
+    
+    // Check immediately
+    checkAccountCreationPaymentStatus();
+    
+    // Then poll every 3 seconds
+    state.accountCreationPollTimer = setInterval(() => {
+        checkAccountCreationPaymentStatus();
+    }, PAYMENT_POLL_INTERVAL);
+}
+
+function stopAccountCreationPolling() {
+    if (state.accountCreationPollTimer) {
+        clearInterval(state.accountCreationPollTimer);
+        state.accountCreationPollTimer = null;
+    }
+}
+
+async function checkAccountCreationPaymentStatus() {
+    if (!state.currentAccountCreation) {
+        stopAccountCreationPolling();
+        return;
+    }
+    
+    try {
+        const statusResponse = await checkAccountPaymentStatus(state.currentAccountCreation.payment_hash);
+        
+        if (statusResponse.payment_status === 'paid') {
+            // Payment successful - account created!
+            updateAccountPaymentStatus('success', 'Payment confirmed! Account created successfully!');
+            
+            // Auto-fill the access token and proceed with authentication
+            setTimeout(async () => {
+                hideAccountCreationModal();
+                
+                // Fill in the access token
+                document.getElementById('accessToken').value = state.currentAccountCreation.access_token;
+                
+                // Clear account creation state
+                state.currentAccountCreation = null;
+                
+                // Show success message with email address
+                showStatus(`Account created! Email: ${statusResponse.email_address}. Connecting...`, 'success');
+                
+                // Automatically connect with the new token
+                await handleConnect();
+                
+            }, 2000);
+            
+            stopAccountCreationPolling();
+            
+        } else if (statusResponse.payment_status === 'expired') {
+            updateAccountPaymentStatus('error', 'Payment expired. Please try again.');
+            stopAccountCreationPolling();
+        } else {
+            // Still pending
+            updateAccountPaymentStatus('pending', 'Waiting for payment...');
+        }
+        
+    } catch (error) {
+        console.error('Failed to check account payment status:', error);
+        updateAccountPaymentStatus('error', `Payment check failed: ${error.message}`);
+    }
+}
+
+async function handleCancelAccountCreation() {
+    stopAccountCreationPolling();
+    state.currentAccountCreation = null;
+    hideAccountCreationModal();
+    showStatus('Account creation cancelled', 'info');
+}
+
+async function handleCopyAccountInvoice() {
+    if (!state.currentAccountCreation) {
+        showStatus('No invoice to copy', 'error');
+        return;
+    }
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(state.currentAccountCreation.payment_request);
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = state.currentAccountCreation.payment_request;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+        }
+        
+        showStatus('Lightning invoice copied to clipboard!', 'success');
+    } catch (error) {
+        console.error('Failed to copy account invoice:', error);
+        showStatus('Failed to copy invoice to clipboard', 'error');
+    }
+} 

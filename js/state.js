@@ -9,5 +9,8 @@ export const state = {
     selectedEmailIds: new Set(),
     // Payment tracking
     currentPayment: null,
-    paymentPollTimer: null
+    paymentPollTimer: null,
+    // Account creation payment tracking
+    currentAccountCreation: null,
+    accountCreationPollTimer: null
 }; 

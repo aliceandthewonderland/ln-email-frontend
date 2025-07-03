@@ -120,6 +120,18 @@ body {
     color: #dc3545;
 }
 
+.create-account-link {
+    color: #667eea;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+}
+
+.create-account-link:hover {
+    color: #764ba2;
+    text-decoration: none;
+}
+
 /* Button Styles */
 .btn-primary, .btn-secondary, .btn-danger {
     padding: 10px 20px;
@@ -1370,6 +1382,25 @@ body {
     max-width: 60%;
     text-align: right;
     word-break: break-word;
+}
+
+/* Special styling for access token in account creation */
+#accountAccessToken {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 4px 6px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    max-width: 65%;
+    overflow-wrap: break-word;
+    word-break: break-all;
+}
+
+#accountEmailAddress {
+    font-weight: 600;
+    color: #667eea;
 }
 
 .qr-code-container {

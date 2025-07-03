@@ -48,7 +48,8 @@
                     </div>
                     <div class="help-text">
                         <i class="fas fa-info-circle"></i>
-                        Don't have an access token? Create an email account first using the API.
+                        Don't have an access token? 
+                        <span id="createAccountLink" class="create-account-link">Create an email account first here.</span>
                     </div>
                     <div class="health-requirement-notice">
                         <i class="fas fa-heartbeat"></i>
@@ -103,6 +104,62 @@
                             <i class="fas fa-times"></i> Cancel
                         </button>
                         <button id="copyInvoiceBtn" class="btn-secondary">
+                            <i class="fas fa-copy"></i> Copy Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Creation Modal -->
+        <div id="accountCreationModal" class="modal">
+            <div class="modal-content payment-modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-user-plus"></i> Create LNemail Account</h2>
+                    <p>Pay with Lightning to create your new email account</p>
+                </div>
+                <div class="modal-body">
+                    <div class="payment-info">
+                        <div class="payment-details">
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Service:</span>
+                                <span class="payment-value">New Email Account</span>
+                            </div>
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Email Address:</span>
+                                <span id="accountEmailAddress" class="payment-value">-</span>
+                            </div>
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Access Token:</span>
+                                <span id="accountAccessToken" class="payment-value">-</span>
+                            </div>
+                            <div class="payment-detail-item">
+                                <span class="payment-label">Amount:</span>
+                                <span id="accountAmount" class="payment-value">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="qr-code-container">
+                            <canvas id="accountQrCodeCanvas"></canvas>
+                        </div>
+                        
+                        <div class="payment-status">
+                            <div class="payment-status-indicator">
+                                <i id="accountPaymentStatusIcon" class="fas fa-circle-notch fa-spin" style="color: #ffc107;"></i>
+                                <span id="accountPaymentStatusText">Waiting for payment...</span>
+                            </div>
+                            <div class="payment-hash">
+                                <span class="payment-label">Payment Hash:</span>
+                                <span id="accountPaymentHashValue" class="payment-hash-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-actions">
+                        <button id="cancelAccountCreationBtn" class="btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button id="copyAccountInvoiceBtn" class="btn-secondary">
                             <i class="fas fa-copy"></i> Copy Invoice
                         </button>
                     </div>
