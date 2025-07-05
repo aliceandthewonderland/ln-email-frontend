@@ -5,14 +5,25 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS configuration
+// Define allowed origins in one place
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  // production domain
+];
+
+// Update main CORS config
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://lnemail.net',
-    // Add more origins as needed
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, server-to-server)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
@@ -33,6 +44,14 @@ app.get('/', (req, res) => {
 
 // Proxy routes for LNemail API
 app.use('/api/lnemail', async (req, res) => {
+  const origin = req.headers.origin;
+  
+  // Only allow auth headers from trusted origins
+  if (origin && !allowedOrigins.includes(origin)) {
+    delete req.headers.authorization;
+    return res.status(403).json({ error: 'Forbidden origin' });
+  }
+
   try {
     const fetch = (await import('node-fetch')).default;
     const apiPath = req.path.replace('/api/lnemail', '') || '/';
@@ -64,8 +83,11 @@ app.use('/api/lnemail', async (req, res) => {
     
     console.log(`Response: ${response.status} ${response.statusText}`);
     
+    if (allowedOrigins.includes(req.headers.origin)) {
+      res.set('Access-Control-Allow-Origin', req.headers.origin);
+    }
+
     res.set({
-      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
     });
@@ -89,13 +111,17 @@ app.use('/api/lnemail', async (req, res) => {
   }
 });
 
-// Handle preflight requests for the proxy
+// Update OPTIONS handler
 app.options('/api/lnemail*', (req, res) => {
-  res.set({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
-  });
+  const origin = req.headers.origin;
+  
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.set({
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+    });
+  }
   res.status(200).end();
 });
 
