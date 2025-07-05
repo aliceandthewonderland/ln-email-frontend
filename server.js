@@ -13,7 +13,7 @@ const allowedOrigins = [
   ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   ...(process.env.PRODUCTION_URL ? [process.env.PRODUCTION_URL] : []),
   // Add common Vercel patterns
-  'https://lnemail-client.vercel.app',
+  'https://ln-email-frontend.vercel.app',
   'https://lnemail.vercel.app',
   // Allow any vercel.app subdomain in development
   ...(process.env.NODE_ENV !== 'production' ? ['https://lnemail-client-git-main-your-username.vercel.app'] : [])
