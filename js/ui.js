@@ -13,14 +13,45 @@ export function showStatus(message, type = 'info') {
                 type === 'error' ? 'exclamation-circle' : 
                 'info-circle';
     
-    statusDiv.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'status-close-btn';
+    closeBtn.setAttribute('aria-label', 'Close notification');
+    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+    // Progress bar
+    const progressBar = document.createElement('div');
+    progressBar.className = 'status-progress-bar';
+
+    statusDiv.innerHTML = `<i class="fas fa-${icon}"></i> <span class="status-message-text">${message}</span>`;
+    statusDiv.appendChild(closeBtn);
+    statusDiv.appendChild(progressBar);
     statusContainer.appendChild(statusDiv);
 
-    setTimeout(() => {
+    // Animate progress bar
+    const duration = 5000;
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+        progressBar.style.transition = `width ${duration}ms linear`;
+        requestAnimationFrame(() => {
+            progressBar.style.width = '100%';
+        });
+    });
+
+    // Auto-remove after duration
+    const timeoutId = setTimeout(() => {
         if (statusDiv.parentNode) {
             statusDiv.parentNode.removeChild(statusDiv);
         }
-    }, 5000);
+    }, duration);
+
+    // Manual close
+    closeBtn.addEventListener('click', () => {
+        clearTimeout(timeoutId);
+        if (statusDiv.parentNode) {
+            statusDiv.parentNode.removeChild(statusDiv);
+        }
+    });
 }
 
 export function showTokenModal() {
