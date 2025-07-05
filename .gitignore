@@ -5,6 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 .cursor 
+.gemini
 
 # Runtime data
 pids
