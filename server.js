@@ -61,7 +61,7 @@ app.use('/api/lnemail', async (req, res) => {
       ? `https://lnemail.net/api${apiPath}`
       : `https://lnemail.net/api/v1${apiPath}`;
     
-    console.log(`Proxying ${req.method} ${req.path} -> ${targetUrl}`);
+    // console.log(`Proxying ${req.method} ${req.path} -> ${targetUrl}`);
     
     const options = {
       method: req.method,
@@ -82,7 +82,7 @@ app.use('/api/lnemail', async (req, res) => {
     const response = await fetch(targetUrl, options);
     const data = await response.text();
     
-    console.log(`Response: ${response.status} ${response.statusText}`);
+    // console.log(`Response: ${response.status} ${response.statusText}`);
     
     if (allowedOrigins.includes(req.headers.origin)) {
       res.set('Access-Control-Allow-Origin', req.headers.origin);
@@ -103,7 +103,7 @@ app.use('/api/lnemail', async (req, res) => {
       res.send(data);
     }
   } catch (error) {
-    console.error('Proxy error:', error);
+    // console.error('Proxy error:', error);
     res.status(500).json({ 
       error: 'Proxy Error',
       message: 'Failed to proxy request to LNemail API',
@@ -145,7 +145,7 @@ app.use((req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
+  // console.error('Error:', err.stack);
   res.status(500).json({ 
     error: 'Internal Server Error',
     message: 'Something went wrong on the server.'
@@ -155,6 +155,6 @@ app.use((err, req, res, next) => {
 // Start the server
 app.listen(PORT, () => {
   console.log(`🚀 LNemail Client Server is running on port ${PORT}`);
-  console.log(`📧 Access the application at: http://localhost:${PORT}`);
-  console.log(`🌐 CORS enabled for secure cross-origin requests`);
+  // console.log(`📧 Access the application at: http://localhost:${PORT}`);
+  // console.log(`🌐 CORS enabled for secure cross-origin requests`);
 }); 

@@ -413,7 +413,7 @@ a.click();
         
         showStatus(`Downloaded ${attachment.filename}`, 'success');
     } catch (error) {
-        console.error('Failed to download attachment:', error);
+        // console.error('Failed to download attachment:', error);
         showStatus(`Failed to download ${attachment.filename}: ${error.message}`, 'error');
     }
 }
@@ -458,7 +458,7 @@ function previewAttachment(index) {
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
     } catch (error) {
-        console.error('Failed to preview attachment:', error);
+        // console.error('Failed to preview attachment:', error);
         showStatus(`Failed to preview ${attachment.filename}: ${error.message}`, 'error');
     }
 }
@@ -677,7 +677,7 @@ async function generateQRCode(paymentRequest) {
         });
 
     } catch (error) {
-        console.error('QR Code library error:', error);
+        // console.error('QR Code library error:', error);
         showStatus('QR code library unavailable, showing text invoice', 'warning');
         showFallbackQRCode(paymentRequest);
     }
@@ -791,7 +791,7 @@ async function generateAccountQRCode(paymentRequest) {
         });
         
     } catch (error) {
-        console.error('Account QR Code library error:', error);
+        // console.error('Account QR Code library error:', error);
         showStatus('QR code library unavailable, showing text invoice', 'warning');
         showAccountFallbackQRCode(paymentRequest);
     }

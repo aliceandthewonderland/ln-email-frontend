@@ -29,7 +29,7 @@ async function makeRequest(endpoint, options = {}) {
             return await response.text();
         }
     } catch (error) {
-        console.error('API Request failed:', error);
+        // console.error('API Request failed:', error);
         
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             throw new Error('Network error: Please make sure you\'re running this app through a web server (not file://) to avoid CORS issues. Try running: python -m http.server 8000');
@@ -44,13 +44,13 @@ export async function checkAccountAuthorization() {
         const response = await makeRequest('/account');
         
         if (!response || typeof response !== 'object' || !response.email_address || !response.expires_at) {
-            console.error('Invalid response format from /account');
+            // console.error('Invalid response format from /account');
             return false;
         }
         
         const expiresAt = new Date(response.expires_at);
         if (isNaN(expiresAt.getTime()) || expiresAt <= new Date()) {
-            console.error('Token has expired or expiry date is invalid');
+            // console.error('Token has expired or expiry date is invalid');
             return false;
         }
         
@@ -60,10 +60,10 @@ export async function checkAccountAuthorization() {
             expires_date: expiresAt
         };
         
-        console.log(`Account authorized for: ${response.email_address}`);
+        // console.log(`Account authorized for: ${response.email_address}`);
         return true;
     } catch (error) {
-        console.error('Account authorization check failed:', error);
+        // console.error('Account authorization check failed:', error);
         return false;
     }
 }
@@ -98,7 +98,7 @@ export async function checkApiHealth() {
             data: response
         };
     } catch (error) {
-        console.error('API health check failed:', error);
+        // console.error('API health check failed:', error);
         return {
             success: false,
             error: error.message
@@ -117,7 +117,7 @@ export async function deleteEmails(emailIds) {
             data: response
         };
     } catch (error) {
-        console.error('Delete emails failed:', error);
+        // console.error('Delete emails failed:', error);
         return {
             success: false,
             error: error.message

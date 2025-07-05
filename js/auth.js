@@ -7,7 +7,7 @@ function getSavedToken() {
     try {
         return localStorage.getItem('lnemail_access_token');
     } catch (error) {
-        console.error('Failed to get saved token:', error);
+        // console.error('Failed to get saved token:', error);
         return null;
     }
 }
@@ -15,18 +15,18 @@ function getSavedToken() {
 function saveToken(token) {
     try {
         localStorage.setItem('lnemail_access_token', token);
-        console.log('Token saved to localStorage');
+        // console.log('Token saved to localStorage');
     } catch (error) {
-        console.error('Failed to save token:', error);
+        // console.error('Failed to save token:', error);
     }
 }
 
 function clearSavedToken() {
     try {
         localStorage.removeItem('lnemail_access_token');
-        console.log('Saved token cleared from localStorage');
+        // console.log('Saved token cleared from localStorage');
     } catch (error) {
-        console.error('Failed to clear saved token:', error);
+        // console.error('Failed to clear saved token:', error);
     }
 }
 
@@ -153,12 +153,12 @@ export async function performLoginHealthCheck() {
         updateLoginHealthStatus(healthResult);
         
         if (healthResult.success) {
-            console.log('API health check successful on login page');
+            // console.log('API health check successful on login page');
         } else {
-            console.warn('API health check failed on login page:', healthResult.error);
+            // console.warn('API health check failed on login page:', healthResult.error);
         }
     } catch (error) {
-        console.error('Login health check error:', error);
+        // console.error('Login health check error:', error);
         updateLoginHealthStatus({ success: false, error: error.message });
     }
 } 

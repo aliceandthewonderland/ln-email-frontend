@@ -152,7 +152,7 @@ function startPaymentPolling() {
                 updatePaymentStatus('pending', 'Waiting for payment...');
             }
         } catch (error) {
-            console.error('Payment status check failed:', error);
+            // console.error('Payment status check failed:', error);
             updatePaymentStatus('error', 'Failed to check payment status');
         }
     };
@@ -201,7 +201,7 @@ async function handleCopyInvoice() {
         
         showStatus('Lightning invoice copied to clipboard!', 'success');
     } catch (error) {
-        console.error('Failed to copy invoice:', error);
+        // console.error('Failed to copy invoice:', error);
         showStatus('Failed to copy invoice to clipboard', 'error');
     }
 }
@@ -274,7 +274,7 @@ async function handleCopyEmail() {
         
         showStatus(`Email address copied: ${emailText}`, 'success');
     } catch (error) {
-        console.error('Failed to copy email:', error);
+        // console.error('Failed to copy email:', error);
         showStatus('Failed to copy email address to clipboard', 'error');
     }
 }
@@ -368,7 +368,7 @@ function init() {
     
     // Set up automatic health checking every 5 minutes
     setInterval(performAutomaticHealthCheck, HEALTH_CHECK_INTERVAL);
-    console.log(`Automatic health checking enabled (every ${HEALTH_CHECK_INTERVAL / 60000} minutes)`);
+    // console.log(`Automatic health checking enabled (every ${HEALTH_CHECK_INTERVAL / 60000} minutes)`);
 }
 
 // Initialize the application
@@ -474,7 +474,7 @@ async function checkAccountCreationPaymentStatus() {
         }
         
     } catch (error) {
-        console.error('Failed to check account payment status:', error);
+        // console.error('Failed to check account payment status:', error);
         updateAccountPaymentStatus('error', `Payment check failed: ${error.message}`);
     }
 }
@@ -511,7 +511,7 @@ async function handleCopyAccountInvoice() {
         
         showStatus('Lightning invoice copied to clipboard!', 'success');
     } catch (error) {
-        console.error('Failed to copy account invoice:', error);
+        // console.error('Failed to copy account invoice:', error);
         showStatus('Failed to copy invoice to clipboard', 'error');
     }
 }
@@ -545,7 +545,7 @@ async function handleCopyAccessToken() {
         
         showStatus('Access token copied to clipboard!', 'success');
     } catch (error) {
-        console.error('Failed to copy access token:', error);
+        // console.error('Failed to copy access token:', error);
         showStatus('Failed to copy access token to clipboard', 'error');
     }
 } 

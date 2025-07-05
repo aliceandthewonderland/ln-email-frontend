@@ -18,7 +18,7 @@ export async function refreshInbox() {
         renderEmailList();
         updateInboxCount();
     } catch (error) {
-        console.error('Failed to refresh inbox:', error);
+        // console.error('Failed to refresh inbox:', error);
         showStatus(`Failed to load emails: ${error.message}`, 'error');
         renderEmailList(); // will render empty state
     } finally {
@@ -33,18 +33,18 @@ export function startAutoRefresh() {
             try {
                 await refreshInbox();
             } catch (error) {
-                console.error('Auto-refresh failed:', error);
+                // console.error('Auto-refresh failed:', error);
             }
         }
     }, AUTO_REFRESH_INTERVAL);
-    console.log(`Auto-refresh started (every ${AUTO_REFRESH_INTERVAL / 1000} seconds)`);
+    // console.log(`Auto-refresh started (every ${AUTO_REFRESH_INTERVAL / 1000} seconds)`);
 }
 
 export function stopAutoRefresh() {
     if (state.autoRefreshTimer) {
         clearInterval(state.autoRefreshTimer);
         state.autoRefreshTimer = null;
-        console.log('Auto-refresh stopped');
+        // console.log('Auto-refresh stopped');
     }
 }
 
