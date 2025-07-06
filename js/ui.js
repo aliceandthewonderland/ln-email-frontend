@@ -200,10 +200,10 @@ export function renderEmailList() {
 function renderPaginationControls(totalPages) {
     if (totalPages <= 1) return '';
 
-    let paginationHtml = `<div class="pagination-controls" style="text-align: center; margin-top: 15px;">`;
-    paginationHtml += `<button class="pagination-btn" data-page="${state.currentPage - 1}" ${state.currentPage === 1 ? 'disabled' : ''} style="margin: 0 5px; padding: 5px 10px; cursor: pointer;"><i class="fas fa-chevron-left"></i> Prev</button>`;
-    paginationHtml += `<span class="pagination-info" style="margin: 0 10px;">Page ${state.currentPage} of ${totalPages}</span>`;
-    paginationHtml += `<button class="pagination-btn" data-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? 'disabled' : ''} style="margin: 0 5px; padding: 5px 10px; cursor: pointer;">Next <i class="fas fa-chevron-right"></i></button>`;
+    let paginationHtml = `<div class="pagination-controls">`;
+    paginationHtml += `<button class="pagination-btn" data-page="${state.currentPage - 1}" ${state.currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Prev</button>`;
+    paginationHtml += `<span class="pagination-info">Page ${state.currentPage} of ${totalPages}</span>`;
+    paginationHtml += `<button class="pagination-btn" data-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? 'disabled' : ''}>Next <i class="fas fa-chevron-right"></i></button>`;
     paginationHtml += `</div>`;
     return paginationHtml;
 }
@@ -429,21 +429,20 @@ function previewAttachment(index) {
         }
         
         const textContent = isValidBase64(attachment.content) ? atob(attachment.content) : attachment.content;
-        const modalContent = `<textarea disabled style="width: 100%; height: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 15px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4; background: #f8f9fa; resize: none; outline: none;">${escapeHtml(textContent)}</textarea>`;
+        const modalContent = `<textarea disabled class="preview-textarea">${escapeHtml(textContent)}</textarea>`;
 
         const modal = document.createElement('div');
         modal.className = 'preview-modal';
-        modal.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;`;
         modal.innerHTML = `
-            <div class="preview-content" style="background: white; border-radius: 8px; width: 80vw; height: 80vh; max-width: 1200px; max-height: 800px; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
-                <div class="preview-header" style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-                    <h3 style="margin: 0; color: #333;">${escapeHtml(attachment.filename)}</h3>
-                    <button class="close-preview" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            <div class="preview-content">
+                <div class="preview-header">
+                    <h3>${escapeHtml(attachment.filename)}</h3>
+                    <button class="close-preview">&times;</button>
                 </div>
-                <div class="preview-body" style="flex: 1; padding: 20px; overflow: auto; display: flex; flex-direction: column;">
+                <div class="preview-body">
                     ${modalContent}
                 </div>
-                <div class="preview-actions" style="padding: 15px 20px; border-top: 1px solid #eee; text-align: right; flex-shrink: 0;">
+                <div class="preview-actions">
                     <button class="btn-small preview-download-btn"><i class="fas fa-download"></i> Download</button>
                 </div>
             </div>
@@ -458,7 +457,6 @@ function previewAttachment(index) {
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
     } catch (error) {
-        // console.error('Failed to preview attachment:', error);
         showStatus(`Failed to preview ${attachment.filename}: ${error.message}`, 'error');
     }
 }
@@ -689,11 +687,11 @@ function showFallbackQRCode(paymentRequest) {
     if (!container) return;
 
     container.innerHTML = `
-        <div style="padding: 20px; text-align: center; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; width: 100%;">
-            <i class="fas fa-qrcode" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
-            <p style="margin-bottom: 10px; font-weight: 600; color: #495057;">QR Code Unavailable</p>
-            <p style="font-size: 12px; color: #6c757d; margin-bottom: 15px;">Please copy the invoice manually:</p>
-            <textarea readonly style="width: 100%; height: 80px; font-family: monospace; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 8px; resize: none;">${paymentRequest}</textarea>
+        <div class="qr-fallback-box">
+            <i class="fas fa-qrcode qr-fallback-icon"></i>
+            <p class="qr-fallback-title">QR Code Unavailable</p>
+            <p class="qr-fallback-desc">Please copy the invoice manually:</p>
+            <textarea readonly class="qr-fallback-textarea">${paymentRequest}</textarea>
         </div>
     `;
 }
@@ -801,11 +799,11 @@ function showAccountFallbackQRCode(paymentRequest) {
     // Fallback: show the invoice as text if QR code fails
     const container = document.querySelector('#accountCreationModal .qr-code-container');
     container.innerHTML = `
-        <div style="text-align: center; padding: 20px; border: 2px dashed #dee2e6; border-radius: 8px; background-color: #f8f9fa;">
-            <i class="fas fa-qrcode" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
-            <p style="margin-bottom: 10px; font-weight: 600; color: #495057;">QR Code Unavailable</p>
-            <p style="font-size: 12px; color: #6c757d; margin-bottom: 15px;">Please copy the invoice manually:</p>
-            <textarea readonly style="width: 100%; height: 80px; font-family: monospace; font-size: 11px; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; resize: none;">${paymentRequest}</textarea>
+        <div class="qr-fallback-box">
+            <i class="fas fa-qrcode qr-fallback-icon"></i>
+            <p class="qr-fallback-title">QR Code Unavailable</p>
+            <p class="qr-fallback-desc">Please copy the invoice manually:</p>
+            <textarea readonly class="qr-fallback-textarea">${paymentRequest}</textarea>
         </div>
     `;
 }
